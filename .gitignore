@@ -1,0 +1,9 @@
+# template that should be ignored by git
+docs/references/actix-template
+
+# claude
+.claude/settings.local.json
+
+
+# Jetbrain DB
+DB/*

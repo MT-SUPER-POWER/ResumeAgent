@@ -1,0 +1,7 @@
+[submodule "repo/backend"]
+	path = repo/backend
+	url = https://github.com/MT-SUPER-POWER/ResumeAgent-backend.git
+
+[submodule "repo/frontend"]
+	path = repo/frontend
+	url = https://github.com/MT-SUPER-POWER/ResumeAgent-frontend.git

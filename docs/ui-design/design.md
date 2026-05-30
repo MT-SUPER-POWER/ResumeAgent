@@ -466,6 +466,10 @@ Figma 文件:
 - 2 个阴影样式:
   - `RA/Card`
   - `RA/Popover`
+- 34 个颜色 Paint Styles:
+  - `RA/Primitive/*`
+  - `RA/Semantic/*`
+  - `RA/Status/*`
 - 6 个本地组件样例:
   - `RA/Button`
   - `RA/Tag / Status`
@@ -474,10 +478,15 @@ Figma 文件:
   - `RA/ProgressSteps`
   - `RA/DataTable`
 - `03 Pages` 页面中已放置 8 个页面缩略稿，用于验证侧边栏结构和页面职责。
+- `03 Pages` 页面中已创建首页高保真稿 `RA / Screen - 首页`。
+
+首页当前稿:
+
+![首页 Figma 截图](homepage-screenshot.png)
 
 后续需要继续精细化:
 
 - 将组件样例拆成正式 variant set。
 - 给 AppShell、Navbar、Sidebar、Card、DetailDrawer 建立独立组件。
-- 基于 `简历分析` 和 `候选人评估` 两个核心页面做高保真页面稿。
+- 继续基于当前 AppShell 复现 `简历分析` 和 `候选人评估` 两个核心页面。
 - 为图表、表格、筛选器补充真实交互状态。

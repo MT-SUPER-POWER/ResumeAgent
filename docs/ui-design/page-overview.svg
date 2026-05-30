@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="3220" viewBox="0 0 1600 3220">
+  <defs>
+    <style>
+      .bg { fill: #f5f7fb; }
+      .card { fill: #ffffff; stroke: #dce3ee; stroke-width: 1.2; rx: 14; }
+      .panel { fill: #ffffff; stroke: #dce3ee; stroke-width: 1; rx: 10; }
+      .soft { fill: #f8fafc; stroke: #e3e9f3; stroke-width: 1; rx: 8; }
+      .sidebar { fill: #f1f4f8; stroke: #dce3ee; stroke-width: 1; rx: 10; }
+      .active { fill: #e8f1ff; stroke: #b9d4ff; stroke-width: 1; rx: 8; }
+      .primary { fill: #1769e0; }
+      .primary-soft { fill: #e8f1ff; }
+      .success { fill: #dcfce7; }
+      .warning { fill: #fff7ed; }
+      .danger { fill: #fee2e2; }
+      .muted { fill: #64748b; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; }
+      .text { fill: #1f2937; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; }
+      .title { fill: #0f172a; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; font-weight: 700; }
+      .blue { fill: #1769e0; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; font-weight: 700; }
+      .tiny { font-size: 18px; }
+      .small { font-size: 22px; }
+      .body { font-size: 26px; }
+      .h3 { font-size: 32px; }
+      .h2 { font-size: 42px; }
+      .h1 { font-size: 58px; }
+      .mono { font-family: Consolas, "Microsoft YaHei", monospace; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="3220"/>
+
+  <text class="title h1" x="80" y="92">ResumeAgent Web UI 页面结构总览</text>
+  <text class="muted body" x="82" y="142">上传简历 -> 自动岗位匹配 -> AI 评估 -> 报告生成 -> 汇总留存</text>
+
+  <!-- Global shell -->
+  <rect class="card" x="80" y="190" width="1440" height="360"/>
+  <text class="title h3" x="110" y="238">全局布局</text>
+  <text class="muted small" x="110" y="274">所有页面共用顶部 Navbar、左侧 Sidebar、右侧 Children 内容区。</text>
+  <rect class="panel" x="110" y="305" width="900" height="210"/>
+  <rect class="primary-soft" x="130" y="325" width="860" height="42" rx="7"/>
+  <text class="blue tiny" x="152" y="353">Top Navbar: Logo / 全局搜索 / 数据库状态 / LLM Provider / HR Admin</text>
+  <rect class="sidebar" x="130" y="385" width="190" height="110"/>
+  <text class="blue tiny" x="164" y="448">Sidebar</text>
+  <rect class="soft" x="345" y="385" width="645" height="110"/>
+  <text class="blue tiny" x="600" y="448">Children Area</text>
+
+  <rect class="panel" x="1040" y="305" width="440" height="210"/>
+  <text class="title small" x="1070" y="342">侧边栏结构</text>
+  <text class="blue tiny" x="1070" y="378">核心工作</text>
+  <text class="text tiny" x="1088" y="408">首页 / 简历分析 / 分析记录 / 候选人评估</text>
+  <text class="blue tiny" x="1070" y="444">基础数据</text>
+  <text class="text tiny" x="1088" y="474">岗位库 / 报告中心</text>
+  <text class="blue tiny" x="1070" y="510">系统管理</text>
+  <text class="text tiny" x="1088" y="540">数据中心 / 系统设置</text>
+
+  <!-- Page helper pattern repeated manually -->
+  <!-- 1 Home -->
+  <rect class="card" x="80" y="600" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="650" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="659">1</text>
+  <text class="title h3" x="170" y="660">首页</text>
+  <text class="muted small" x="170" y="700">运营态势总览和常用入口，不展示完整候选人排名。</text>
+  <rect class="panel" x="170" y="730" width="780" height="110"/>
+  <rect class="soft" x="195" y="755" width="130" height="60"/><text class="text tiny" x="214" y="780">今日上传</text><text class="blue small" x="214" y="808">168</text>
+  <rect class="soft" x="345" y="755" width="150" height="60"/><text class="text tiny" x="364" y="780">完成评估</text><text class="blue small" x="364" y="808">264</text>
+  <rect class="soft" x="515" y="755" width="170" height="60"/><text class="text tiny" x="534" y="780">累计评估</text><text class="blue small" x="534" y="808">8,268</text>
+  <polyline points="720,815 750,795 780,805 810,770 840,788 875,760 915,782" fill="none" stroke="#1769e0" stroke-width="4"/>
+  <text class="muted tiny" x="720" y="755">近 15 天分析趋势</text>
+  <rect class="soft" x="990" y="730" width="460" height="110"/>
+  <text class="text tiny" x="1020" y="762">最近分析批次 TOP 5 / 系统状态 / 异常提醒</text>
+  <text class="muted tiny" x="1020" y="802">快捷入口: 上传简历、查看最近结果、维护岗位库</text>
+
+  <!-- 2 Analyze -->
+  <rect class="card" x="80" y="920" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="970" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="979">2</text>
+  <text class="title h3" x="170" y="980">简历分析</text>
+  <text class="muted small" x="170" y="1020">上传并执行分析流程，对应 run-dir / run-files 和 pipeline::run(files)。</text>
+  <rect class="panel" x="170" y="1050" width="520" height="110"/>
+  <text class="blue small" x="220" y="1092">拖拽 PDF / DOCX 简历到这里</text>
+  <text class="muted tiny" x="220" y="1126">文件预检查: 类型 / 重复 / 大小 / 解析状态</text>
+  <rect class="primary" x="730" y="1060" width="180" height="54" rx="8"/><text fill="#fff" font-family="Microsoft YaHei" font-size="22" x="778" y="1095">开始分析</text>
+  <rect class="success" x="940" y="1050" width="510" height="110" rx="10"/>
+  <text class="text tiny" x="970" y="1085">无需手动选择 JD</text>
+  <text class="muted tiny" x="970" y="1120">系统基于岗位库自动判断候选人最匹配岗位</text>
+  <text class="blue tiny" x="190" y="1182">文件解析 -> AI 评估 -> 报告生成 -> 汇总排名</text>
+
+  <!-- 3 Runs -->
+  <rect class="card" x="80" y="1240" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="1290" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="1299">3</text>
+  <text class="title h3" x="170" y="1300">分析记录</text>
+  <text class="muted small" x="170" y="1340">批次留存和历史追溯，对应 output/&lt;timestamp&gt;/。</text>
+  <rect class="panel" x="170" y="1370" width="820" height="110"/>
+  <text class="text tiny" x="200" y="1402">运行时间</text><text class="text tiny" x="360" y="1402">上传</text><text class="text tiny" x="460" y="1402">完成</text><text class="text tiny" x="560" y="1402">跳过</text><text class="text tiny" x="660" y="1402">失败</text><text class="text tiny" x="760" y="1402">复用</text><text class="text tiny" x="860" y="1402">状态</text>
+  <line x1="190" y1="1418" x2="960" y2="1418" stroke="#e3e9f3"/>
+  <text class="muted tiny" x="200" y="1452">2026-05-30 07:12</text><text class="muted tiny" x="370" y="1452">42</text><text class="muted tiny" x="470" y="1452">38</text><text class="muted tiny" x="570" y="1452">2</text><text class="muted tiny" x="670" y="1452">1</text><text class="muted tiny" x="770" y="1452">5</text><text class="blue tiny" x="860" y="1452">完成</text>
+  <rect class="soft" x="1030" y="1370" width="420" height="110"/>
+  <text class="text tiny mono" x="1060" y="1405">summary/data.json</text>
+  <text class="text tiny mono" x="1060" y="1438">summary/ranking.md</text>
+  <text class="text tiny mono" x="1060" y="1471">reports/*.md</text>
+
+  <!-- 4 Candidates -->
+  <rect class="card" x="80" y="1560" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="1610" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="1619">4</text>
+  <text class="title h3" x="170" y="1620">候选人评估</text>
+  <text class="muted small" x="170" y="1660">排名、筛选、候选人详情，是查看结果的主页面。</text>
+  <rect class="panel" x="170" y="1690" width="860" height="110"/>
+  <text class="text tiny" x="200" y="1724">筛选: AI 推荐岗位 / 意向职位 / 城市 / 技能 / 分数区间</text>
+  <line x1="190" y1="1740" x2="1000" y2="1740" stroke="#e3e9f3"/>
+  <text class="text tiny" x="200" y="1774">候选人</text><text class="text tiny" x="330" y="1774">意向职位</text><text class="text tiny" x="480" y="1774">AI 推荐</text><text class="text tiny" x="640" y="1774">人才评级</text><text class="text tiny" x="780" y="1774">岗位匹配</text><text class="blue tiny" x="940" y="1774">报告</text>
+  <rect class="soft" x="1070" y="1690" width="380" height="110"/>
+  <text class="text tiny" x="1100" y="1725">详情抽屉</text>
+  <text class="muted tiny" x="1100" y="1760">8 维人才评级 / 7 维岗位匹配 / 证据片段</text>
+
+  <!-- 5 Jobs -->
+  <rect class="card" x="80" y="1880" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="1930" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="1939">5</text>
+  <text class="title h3" x="170" y="1940">岗位库</text>
+  <text class="muted small" x="170" y="1980">自动匹配的基础数据，不是分析前必须选择的输入项。</text>
+  <rect class="panel" x="170" y="2010" width="760" height="110"/>
+  <text class="text tiny" x="200" y="2044">岗位 / 部门 / 地点 / 技术栈 / 启用状态 / 推荐次数</text>
+  <text class="muted tiny" x="200" y="2084">支持新增、编辑、导入、启用、停用</text>
+  <rect class="soft" x="970" y="2010" width="480" height="110"/>
+  <text class="text tiny" x="1000" y="2044">岗位详情</text>
+  <text class="muted tiny" x="1000" y="2084">岗位描述 / 岗位要求 / 额外信息</text>
+
+  <!-- 6 Reports -->
+  <rect class="card" x="80" y="2200" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="2250" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="2259">6</text>
+  <text class="title h3" x="170" y="2260">报告中心</text>
+  <text class="muted small" x="170" y="2300">交付物管理，区别于候选人评估页的数据筛选。</text>
+  <rect class="panel" x="170" y="2330" width="560" height="110"/>
+  <text class="text tiny" x="200" y="2364">个人 Markdown 报告 / 汇总排名报告</text>
+  <text class="muted tiny" x="200" y="2404">按批次、候选人、岗位筛选报告</text>
+  <rect class="soft" x="770" y="2330" width="680" height="110"/>
+  <text class="text tiny" x="800" y="2364">导出入口</text>
+  <text class="muted tiny mono" x="800" y="2404">JSON / Excel / ranking.md / reports/*.md</text>
+
+  <!-- 7 Data -->
+  <rect class="card" x="80" y="2520" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="2570" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="2579">7</text>
+  <text class="title h3" x="170" y="2580">数据中心</text>
+  <text class="muted small" x="170" y="2620">底层数据质量、成本和状态监控。</text>
+  <rect class="panel" x="170" y="2650" width="690" height="110"/>
+  <text class="text tiny" x="200" y="2684">resumes / evaluations / result_json / token_usage</text>
+  <text class="muted tiny" x="200" y="2724">缺失报告、失败评估、无法匹配岗位、JSON 异常</text>
+  <rect class="soft" x="900" y="2650" width="550" height="110"/>
+  <polyline points="930,2730 970,2690 1010,2710 1050,2665 1090,2690 1130,2670 1170,2705" fill="none" stroke="#1769e0" stroke-width="4"/>
+  <text class="text tiny" x="1220" y="2692">Token / 成本统计</text>
+
+  <!-- 8 Settings -->
+  <rect class="card" x="80" y="2840" width="1440" height="280"/>
+  <circle class="primary" cx="125" cy="2890" r="26"/><text fill="#fff" font-family="Arial" font-size="26" font-weight="700" x="117" y="2899">8</text>
+  <text class="title h3" x="170" y="2900">系统设置</text>
+  <text class="muted small" x="170" y="2940">技术配置和规则配置。</text>
+  <rect class="panel" x="170" y="2970" width="1280" height="110"/>
+  <text class="text tiny" x="200" y="3004">LLM Provider: OpenAI / Claude</text>
+  <text class="text tiny" x="560" y="3004">数据库连接</text>
+  <text class="text tiny" x="780" y="3004">输出目录</text>
+  <text class="text tiny" x="990" y="3004">Prompt 模板</text>
+  <text class="text tiny" x="1210" y="3004">评分手册版本</text>
+  <text class="muted tiny" x="200" y="3044">超时、重试、并发参数 / 管理员账户和权限</text>
+
+  <!-- Flow footer -->
+  <rect class="card" x="80" y="3150" width="1440" height="50"/>
+  <text class="blue small" x="120" y="3184">页面关系:</text>
+  <text class="text small" x="250" y="3184">首页 -> 简历分析 -> 分析记录 -> 候选人评估 -> 报告中心；岗位库为自动匹配提供基础数据，数据中心和系统设置提供治理能力。</text>
+</svg>

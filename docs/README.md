@@ -5,6 +5,8 @@
 | 文档                                                                                           | 说明                                           |
 | ---------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | [specs/2026-05-28-resume-agent-design.md](superpowers/specs/2026-05-28-resume-agent-design.md) | 主设计文档（架构、数据模型、CLI、Prompt 策略） |
+| [ui-design/page-structure.md](ui-design/page-structure.md)                                     | Web UI 页面结构说明（侧边栏、页面职责、数据映射） |
+| [ui-design/design.md](ui-design/design.md)                                                     | Web UI 设计系统（Token、组件、页面内容规范） |
 | [roadmap.md](roadmap.md)                                                                       | 版本路线图（V0.1 ~ V1.0 + 后续规划）           |
 
 ## 架构

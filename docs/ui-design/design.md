@@ -122,6 +122,36 @@ Top Navbar
 | `shadow/card` | `0 1px 2px rgba(15, 23, 42, 0.04)` | 普通卡片 |
 | `shadow/popover` | `0 8px 24px rgba(15, 23, 42, 0.12)` | 浮层 / 抽屉 |
 
+### Icon
+
+图标统一使用 `lucide` 线性图标体系。
+
+使用规则:
+
+- 默认尺寸: 16px。
+- 快捷入口按钮内图标: 16px，白色描边。
+- 空状态、上传区或较大操作入口: 20px 或 24px。
+- 描边宽度: 2px。
+- 端点和转角: round。
+- 默认颜色: `color/text/secondary`。
+- 激活导航颜色: `color/text/primary`。
+- 图标只表达动作或对象，不单独承载复杂业务含义。
+
+当前映射:
+
+| 场景 | lucide 图标 |
+| --- | --- |
+| 首页 | `Home` |
+| 简历分析 / 上传简历 | `Upload` |
+| 分析记录 / 最近结果 | `History` |
+| 候选人评估 | `Users` |
+| 岗位库 | `BriefcaseBusiness` / `Briefcase` |
+| 报告中心 | `FileText` |
+| 数据中心 | `Database` |
+| 系统设置 | `Settings` |
+| 搜索 | `Search` |
+| 通知 | `Bell` |
+
 ### Typography
 
 字体优先级:
@@ -477,8 +507,22 @@ Figma 文件:
   - `RA/UploadPanel`
   - `RA/ProgressSteps`
   - `RA/DataTable`
+- 12 个 lucide 风格图标组件:
+  - `RA/Icon/Lucide/home`
+  - `RA/Icon/Lucide/upload`
+  - `RA/Icon/Lucide/history`
+  - `RA/Icon/Lucide/users`
+  - `RA/Icon/Lucide/briefcase`
+  - `RA/Icon/Lucide/fileText`
+  - `RA/Icon/Lucide/database`
+  - `RA/Icon/Lucide/settings`
+  - `RA/Icon/Lucide/search`
+  - `RA/Icon/Lucide/bell`
+  - `RA/Icon/Lucide/chart`
+  - `RA/Icon/Lucide/list`
 - `03 Pages` 页面中已放置 8 个页面缩略稿，用于验证侧边栏结构和页面职责。
 - `03 Pages` 页面中已创建首页高保真稿 `RA / Screen - 首页`。
+- 首页高保真稿已将侧边栏、快捷入口、搜索和顶部状态占位符替换为 lucide 风格图标。
 
 首页当前稿:
 

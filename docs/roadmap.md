@@ -1,6 +1,6 @@
 # Resume Agent Roadmap
 
-> 最后更新: 2026-05-28 | 关联设计文档: `docs/superpowers/specs/2026-05-28-resume-agent-design.md`
+> 最后更新: 2026-05-31 | 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md` | 模块: `docs/architecture/modules.md` | V0.3 设计: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
 
 ---
 
@@ -37,71 +37,80 @@ gantt
 ```mermaid
 flowchart LR
   subgraph V01["V0.1 范围"]
-    A["文件解析"] --> B["LLM 提取"]
-    B --> C["LLM 评分"]
-    C --> D["报告生成"]
-    D --> E["汇总排名"]
+    A["文件解析"] --> B["LLM 评估<br/>(提取+评分合并)"]
+    B --> C["报告生成"]
+    C --> D["汇总排名"]
   end
 ```
 
 ### 交付清单
 
-| #   | 功能                    | 说明                                     |
-| --- | ----------------------- | ---------------------------------------- |
-| 1   | PostgreSQL + migrations | 5 张业务表 + schema_migrations           |
-| 2   | PDF/Word 解析           | 不可解析标记 skipped，不阻塞流程         |
-| 3   | LLM 提取                | Claude / OpenAI 可切换，提取结果存 JSONB |
-| 4   | LLM 评分                | 双维度同时打分，评分结果存 JSONB         |
-| 5   | 个人 Markdown 报告      | 含基本信息 + 两维度明细 + 综合评估       |
-| 6   | 汇总排名 Markdown       | 排名表，按分数降序                       |
-| 7   | 汇总 JSON               | 全部数据聚合，方便程序消费               |
-| 8   | CLI 工具                | run / jd / db 三组命令                   |
-| 9   | 配置文件                | config.yaml，环境变量注入                |
+| #   | 功能                    | 说明                                                                             |
+| --- | ----------------------- | -------------------------------------------------------------------------------- |
+| 1   | PostgreSQL + migrations | 4 张业务表 (job_descriptions/resumes/evaluations/schema_migrations)              |
+| 2   | PDF/Word 解析           | SHA256 去重，不可解析标记 skipped，不阻塞流程                                    |
+| 3   | LLM 评估（提取+评分）   | Claude / OpenAI 可切换，一次调用完成提取+双维度评分，结果存 evaluations 表 JSONB |
+| 4   | 个人 Markdown 报告      | 含基本信息 + 两维度明细 + 综合评估                                               |
+| 5   | 汇总排名 Markdown       | 排名表，按人才评分降序                                                           |
+| 6   | 汇总 JSON               | 全部数据聚合，方便程序消费                                                       |
+| 7   | CLI 工具                | RunDir / RunFiles / JdList / JdShow / DbStatus                                   |
+| 8   | 配置文件                | application.yaml，环境变量注入                                                   |
+| 9   | Pipeline 幂等           | Phase 1 (file_hash) + Phase 2 (evaluation status) 跳过已完成                     |
 
 ### 不做
 
 - 并发处理（串行逐份跑）
-- 断点续跑
+- 断点续跑（无显式 --resume 命令）
+- LLM 失败重试
 - Excel 导出
 - Web 界面
+- JD 关联（pipeline 不绑定 JD）
 
 ### 验收标准
 
-- 10 份简历 + 1 个 JD，30 分钟内完成
-- 提取 JSON schema 校验通过率 > 90%
-- 评分 JSON schema 校验通过率 > 90%
+- 10 份简历，30 分钟内完成
+- PipelineResult JSON schema 校验通过率 > 90%
 - 每份简历产出完整 Markdown 报告
 
 ---
 
 ## V0.2 — 可靠性
 
-**目标**: 能处理几十份简历，不怕中断
+**目标**: 能处理几十份简历，不怕中断，状态可追踪
+
+> **基础能力已在 V0.1 就绪**：Pipeline 已内置 SHA256 去重 + evaluation 状态检查，重新运行同一目录自动跳过已完成的文件。V0.2 补齐 LLM 韧性和统一操作记录管理。
 
 ```mermaid
 flowchart LR
   subgraph V02["V0.2 新增"]
-    A["Task Runner"] --> B["SQL 状态表"]
-    B --> C["断点续跑 --resume"]
-    C --> D["失败自动重试"]
+    A["job_runs + pipeline_states"] --> B["统一追踪每份简历阶段"]
+    B --> C["LLM 指数退避重试"]
+    C --> D["失败隔离 + --rerun"]
   end
 ```
 
 ### 交付清单
 
-| #   | 功能             | 说明                                        |
-| --- | ---------------- | ------------------------------------------- |
-| 1   | Task Runner      | job_runs 表管理整体运行状态                 |
-| 2   | 断点续跑         | `--resume` 跳过已完成步骤                   |
-| 3   | 失败重试         | 网络错误自动重试 3 次，指数退避             |
-| 4   | 简历去重         | SHA256 幂等，同文件不重复处理               |
-| 5   | 每份简历独立状态 | resumes / extractions / scores 三表状态联动 |
+| #   | 功能              | 说明                                                              |
+| --- | ----------------- | ----------------------------------------------------------------- |
+| 1   | job_runs 操作记录 | UUID PK，每次 run 一条记录，追踪 total/parsed/evaluated/failed/errors |
+| 2   | pipeline_states   | 统一管理每份简历在每个阶段的运行状态 (parse/evaluate)             |
+| 3   | LLM 重试          | 可重试错误(429/5xx/连接超时)自动重试 3 次，指数退避 1s/2s/4s     |
+| 4   | 失败隔离          | 单份简历任一阶段报错不终止整批，pipeline_states 记录 error_msg 后 continue |
+| 5   | --rerun 命令      | 读取历史 job_run，从上次失败阶段精确续跑，文件缺失则报错          |
+
+### 不做
+
+- 并发处理
+- 文件系统监听模式
 
 ### 验收标准
 
-- 50 份简历中断后能成功续跑
-- 同文件重复上传不触发重复 LLM 调用
-- 单份网络异常不影响整体流程
+- 50 份简历中任意一份网络错误不影响其余
+- job_runs 表准确记录每次操作的全貌
+- pipeline_states 能定位每份简历在哪个阶段失败及原因
+- `--rerun` 精确续跑，已完成阶段跳过，失败阶段重试
+- 运行结束打印失败清单，含文件名和错误原因
 
 ---
 
@@ -109,29 +118,38 @@ flowchart LR
 
 **目标**: 百份级别简历在可接受时间内完成
 
+> **架构设计**: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
+
 ```mermaid
 flowchart LR
   subgraph V03["V0.3 新增"]
-    A["并发 Worker"] --> B["并发控制<br/>--concurrency N"]
-    C["LLM Client<br/>Rate Limiting"] --> D["RPM/TPM 限流"]
-    E["--mode fast"] --> F["提取+评分合并<br/>一次 LLM"]
+    A["Producer-Consumer 管道"] --> B["N 个常驻 worker<br/>--concurrency N"]
+    B --> C["Stage 3 DB 汇聚"]
+    C --> D["failures 字段<br/>data.json + ranking.md"]
   end
 ```
 
 ### 交付清单
 
-| #   | 功能          | 说明                                     |
-| --- | ------------- | ---------------------------------------- |
-| 1   | 并发 Worker   | `--concurrency N` 控制 LLM 并发数        |
-| 2   | Rate Limiting | LLM Client 内置 RPM/TPM 控制和排队       |
-| 3   | 批处理流水线  | 阶段间流水线化，不等全部解析完就开始提取 |
-| 4   | `--mode fast` | 提取+评分合并一次 LLM 调用               |
+| #   | 功能              | 说明                                                              |
+| --- | ----------------- | ----------------------------------------------------------------- |
+| 1   | Producer-Consumer | 3-stage 管道：Stage1 解析 → bounded channel → Stage2 N worker 评估 |
+| 2   | 并发控制          | `--concurrency N` (auto=3)，N 个常驻 worker，channel 容量 N×2     |
+| 3   | DB 连接池检查     | 启动时 needed=concurrency×2+2 对比 max_connections，不足则 warn   |
+| 4   | DB 汇聚           | Stage 3 从 DB JOIN pipeline_states 过滤本 run 结果，而非接收 Vec  |
+| 5   | 失败清单          | data.json 新增 summary + failures 字段，ranking.md 新增处理失败章节 |
+
+### 不做
+
+- Rate Limiting（RPM/TPM）— V0.2 重试已覆盖，后续版本再考虑
+- 阶段流水线化（parse 与 evaluate 重叠）— parse 远快于 evaluate，无收益
 
 ### 验收标准
 
-- 100 份简历 + 1 个 JD，concurrency=5 时 < 15 分钟
+- 100 份简历，concurrency=5 时 < 15 分钟
 - 不触发 API rate limit 错误
-- fast 模式下单份简历处理时间 < 10 秒
+- 单份简历任一阶段失败不影响其余
+- data.json 和 ranking.md 包含失败清单
 
 ---
 

@@ -36,43 +36,80 @@ flowchart LR
 
 ## 二、任务分配: Work-stealing
 
-Stage 1 和 Stage 2 统一使用 `Arc<AtomicUsize>` + `Semaphore` 模式分配任务，不预先分组。
+### 2.1 核心原理：无锁分配
+
+每个 worker 通过 **CPU 级原子操作** `AtomicUsize::fetch_add(1)` 获取自己的任务编号。
 
 ```mermaid
-sequenceDiagram
-    participant F as files[0..99]
-    participant I as AtomicUsize
-    participant A as Worker-A
-    participant B as Worker-B
+flowchart TD
+    W["Worker 调用 fetch_add(1)"] --> CPU["CPU 原子指令<br/>LOCK CMPXCHG / LLD+SC"]
+    CPU --> S1["① 读取当前值"]
+    S1 --> S2["② 加 1"]
+    S2 --> S3["③ 写回"]
+    S3 --> S4["④ 返回旧值"]
+    S4 --> HARD["硬件保证: 以上四步不可分割<br/>100 个 worker 同时调用<br/>也不会有两个拿到相同返回值"]
+    HARD --> RESULT["返回值 v 唯一且递增<br/>files[v] 归当前 worker"]
+```
 
-    A->>I: fetch_add(1) → 0
-    B->>I: fetch_add(1) → 1
-    A->>A: parse files[0]
-    B->>B: parse files[1]
-    A->>A: 完成 → fetch_add(1) → 2
-    A->>A: parse files[2]
-    B->>B: 完成 → fetch_add(1) → 3
-    Note over A,B: Work-stealing: 谁先完成谁抢下一个
+没有锁、没有互斥、没有预先分配。`fetch_add` 本身就是硬件级别的互斥协议。
+
+### 2.2 并发控制：Semaphore
+
+Worker 在开始干活之前必须先获取 Semaphore 许可：
+
+```mermaid
+flowchart LR
+    subgraph 槽位
+        direction LR
+        S1["许可 1<br/>(占用)"]
+        S2["许可 2<br/>(占用)"]
+        S3["许可 3<br/>(空闲)"]
+    end
+    WQ["排队等待的 worker"] -->|"释放后补上"| S3
+```
+
+M 个许可 = 最多 M 个 worker 同时在干活。工作快的 worker 自然抢到更多文件。
+
+### 2.3 Worker 完整循环
+
+```mermaid
+flowchart TD
+    START["Worker 启动"] --> ACQ["Semaphore.acquire()<br/>等待空闲槽位（最多 M 个同时工作）"]
+    ACQ --> IDX["v = AtomicUsize.fetch_add(1)<br/>获取下一个文件索引"]
+    IDX --> CHECK{"v < files.len()?"}
+    CHECK -->|"否 — 文件已分完"| EXIT["drop permit<br/>Worker 退出"]
+    CHECK -->|"是 — 拿到文件 v"| PARSE["parse files[v]<br/>PDF/Word → raw_text"]
+    PARSE --> RESULT{"解析结果?"}
+    RESULT -->|"成功"| SEND["tx.send(ParseTask)<br/>推入 Stage1→Stage2 channel"]
+    RESULT -->|"失败"| LOG["pipeline_states.upsert<br/>(phase=parse, status=failed)"]
+    SEND --> DROP["drop permit<br/>释放槽位"]
+    LOG --> DROP
+    DROP --> ACQ
 ```
 
 ```rust
-// 伪代码：Stage 1 Work-stealing 模式
+// Stage 1 代码模板（示意）
 let idx = Arc::new(AtomicUsize::new(0));
 let sem = Arc::new(Semaphore::new(M));
+let mut handles = vec![];
 
-for file_path in &files {
+loop {
     let permit = sem.clone().acquire_owned().await;
+    let v = idx.fetch_add(1, Ordering::Relaxed);
+    if v >= files.len() { break; }
+
     let tx = tx.clone();
-    let fp = file_path.clone();
-    tokio::spawn(async move {
+    let fp = files[v].clone();
+    handles.push(tokio::spawn(async move {
         let _permit = permit;
-        let task = parse_one(&fp).await;
-        let _ = tx.send(task).await;
-    });
+        if let Some(task) = parse_one(&fp).await {
+            let _ = tx.send(task).await;
+        }
+    }));
 }
 ```
 
-Stage 2 同理——每从 channel 收到一个 ParseTask 就 `acquire` → `spawn` → worker 内 `release`。
+Stage 2 同理——从 channel 收到 ParseTask 后 acquire → spawn → release。
 
 ## 三、Stage 设计
 
@@ -114,9 +151,7 @@ Stage 2 同理——每从 channel 收到一个 ParseTask 就 `acquire` → `spa
 
 ## 四、Channel 与背压
 
-```
-channel 容量 = N × 2
-```
+channel 容量 = N × 2。
 
 ```mermaid
 sequenceDiagram
@@ -155,14 +190,7 @@ db:
 
 ### 连接池校验
 
-启动时：
-
-```
-needed = (M + N) × 2 + 2
-if needed > db.max_connections:
-    warn "当前 parse_workers={M}, concurrency={N}，建议连接池至少 {needed}"
-继续执行（不阻塞）
-```
+启动时，`needed = (M + N) × 2 + 2`，若大于 `db.max_connections` 则打印建议但不阻塞。
 
 ## 六、错误处理
 

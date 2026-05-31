@@ -101,6 +101,8 @@ flowchart TB
 
 ### 4.1 实体关系图
 
+> NOTE: 数据库结构现在已做变更，具体参考 `backend/doc/architecture/data-design.md` 文档。
+
 ```mermaid
 erDiagram
   job_descriptions {

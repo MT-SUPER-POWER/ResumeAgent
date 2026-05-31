@@ -11,17 +11,16 @@
 
 ## Task Table
 
-| #   | Module                | What to build                                                                                     | Test file                       | Tests                                                                                                        | Dependencies            |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| 1   | database + repository | SeaORM CRUD for all 4 entities + soft delete + 9 JD seeds                          | `tests/db_integration.rs` + `tests/mapper.rs` | 基础设施（连接/迁移/表结构/种子数据）、CRUD（JD 增删改查、Resume 软删除、Extraction/Score 幂等） | Real PG                 |
-| 2   | parser                | PDF via `pdf_extract`, DOCX via `zip` + XML, SHA256 去重 + 落库验证                 | `tests/parser_integration.rs`   | PDF/DOCX 文本提取 + DB 落库（raw_text/status 正确写入）、SHA256 去重（同文件同 hash 跳过、异文件异 hash）、不支持类型、文件缺失 | 真实测试文件 + PG |
-| 3   | llm/client            | reqwest HTTP client for OpenAI + Claude chat APIs                                                 | `tests/llm_client_mock.rs`      | Config loads, LlmResponse struct                                                                             | None                    |
-| 4   | extractor             | LLM extraction: hardcoded system prompt, call client, parse `ExtractionResult`, upsert to DB      | `tests/extractor_test.rs`       | Parse valid JSON, parse null name, reject missing dimension                                                  | None                    |
-| 5   | scorer                | LLM scoring: load manuals from `docs/references/`, call client, parse `ScoreResult`, upsert to DB | `tests/scorer_test.rs`          | Parse valid JSON (8 talent dims + 7 match dims), reject missing fields                                       | None                    |
-| 6   | reporter              | Pure function: `ExtractionResult` + `ScoreResult` -> Markdown string. Save to filesystem          | `tests/reporter_test.rs`        | Name in title, missing name -> 未知, scores included, empty skills -> -, overall assessment                  | None                    |
-| 7   | summary               | Ranking table MD + summary JSON. Save to filesystem                                               | `tests/summary_test.rs`         | JD title in output, score columns, empty skills -> -, JSON total count                                       | None                    |
-| 8   | pipeline              | 5-phase orchestrator: parse -> extract -> score -> report -> summary. SHA256 dedup at each phase  | `tests/pipeline_integration.rs` | Ranking sort order by talent_score desc                                                                      | Real PG + wiremock      |
-| 9   | cli                   | Wire clap subcommands (Run, JdList, JdShow, DbStatus) to pipeline + repository                    | — (compile check)               | —                                                                                                            | None                    |
+| #   | Module                | What to build                                                                                                    | Test file                                     | Tests                                                                                                                           | Dependencies       |
+| --- | --------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| 1   | database + repository | SeaORM CRUD for all 4 entities + soft delete + 9 JD seeds                                                        | `tests/db_integration.rs` + `tests/mapper.rs` | 基础设施（连接/迁移/表结构/种子数据）、CRUD（JD 增删改查、Resume 软删除、Extraction/Score 幂等）                                | Real PG            |
+| 2   | parser                | PDF via `pdf_extract`, DOCX via `zip` + XML, SHA256 去重 + 落库验证                                              | `tests/parser_integration.rs`                 | PDF/DOCX 文本提取 + DB 落库（raw_text/status 正确写入）、SHA256 去重（同文件同 hash 跳过、异文件异 hash）、不支持类型、文件缺失 | 真实测试文件 + PG  |
+| 3   | llm/client            | reqwest HTTP client for OpenAI + Claude chat APIs                                                                | `tests/llm_client_mock.rs`                    | Config loads, LlmResponse struct                                                                                                | None               |
+| 4   | evaluator             | 一次 LLM 调用完成提取+双维度评分，prompt 模板在 `src/prompts/`，返回 `PipelineResult`，落库 extractions + scores | `tests/evaluator_test.rs`                     | PipelineResult JSON Schema 校验（8 evidence dims + 8 talent + 7 match）                                                         | None               |
+| 5   | reporter              | Pure function: `PipelineResult` -> Markdown string. Save to filesystem                                           | `tests/reporter_test.rs`                      | Name in title, missing name -> 未知, scores included, empty skills -> -, overall assessment                                     | None               |
+| 6   | summary               | Ranking table MD + summary JSON. Save to filesystem                                                              | `tests/summary_test.rs`                       | JD title in output, score columns, empty skills -> -, JSON total count                                                          | None               |
+| 7   | pipeline              | 4-phase orchestrator: parse -> evaluate -> report -> summary. SHA256 dedup.                                      | `tests/pipeline_integration.rs`               | Ranking sort order by talent_score desc                                                                                         | Real PG + wiremock |
+| 8   | cli                   | Wire clap subcommands (Run, JdList, JdShow, DbStatus) to pipeline + repository                                   | — (compile check)                             | —                                                                                                                               | None               |
 
 ## Test Summary
 
@@ -31,12 +30,11 @@
 | 2         | 4      | —                     |
 | 3         | 2      | —                     |
 | 4         | 3      | —                     |
-| 5         | 3      | —                     |
-| 6         | 5      | —                     |
-| 7         | 4      | —                     |
-| 8         | 1      | PostgreSQL + LLM mock |
-| 9         | —      | compile only          |
-| **Total** | **31** |                       |
+| 5         | 5      | —                     |
+| 6         | 4      | —                     |
+| 7         | 1      | PostgreSQL + LLM mock |
+| 8         | —      | compile only          |
+| **Total** | **28** |                       |
 
 ## Progress Checklist
 
@@ -51,42 +49,40 @@
 - [x] `tests/mapper.rs` — 15 tests PASS (shared Runtime pattern)
 - [x] Commit
 
-### [ ] Task 2: parser
-- [ ] `services/parser.rs` — parse_resume, parse_pdf, extract_docx_text
-- [ ] `tests/parser_integration.rs` — 文本提取 + DB 落库验证 + SHA256 去重 + 异常场景
-- [ ] Commit
+### [x] Task 2: parser
+- [x] `services/parser.rs` — parse_resume, parse_pdf, extract_docx_text
+- [x] `tests/parser_integration.rs` — 6 tests (PDF/DOCX 提取 + DB 落库 + SHA256 去重 + 异常)
+- [x] Commit
 
-### [ ] Task 3: llm/client
-- [ ] `llm/client.rs` — LlmClient, chat, chat_openai, chat_claude
-- [ ] `tests/llm_client_mock.rs` — 2 tests PASS
-- [ ] Commit
+### [x] Task 3: llm/client
+- [x] `llm/client.rs` — LlmClient, chat_openai, chat_claude (reqwest HTTP)
+- [x] `tests/llm_connectivity.rs`
+- [x] Commit
 
-### [ ] Task 4: extractor
-- [ ] `services/extractor.rs` — extract (prompt + LLM + JSON parse + DB upsert)
-- [ ] `tests/extractor_test.rs` — 3 tests PASS
-- [ ] Commit
+### [x] Task 4: evaluator
+- [x] `src/prompts/` — 评估 prompt 模板 ({{placeholders}})
+- [x] `llm/schemas.rs` — 新增 `PipelineResult`
+- [x] `services/evaluator.rs` — 一次 LLM 调用，拆分为两份落库
+- [x] 删除 `services/extractor.rs` + `services/scorer.rs`
+- [x] `tests/evaluator_test.rs` — PipelineResult JSON Schema 校验
+- [x] Commit
 
-### [ ] Task 5: scorer
-- [ ] `services/scorer.rs` — score (manuals + LLM + JSON parse + DB upsert)
-- [ ] `tests/scorer_test.rs` — 3 tests PASS
-- [ ] Commit
+### [x] Task 5: reporter
+- [x] `services/reporter.rs` — generate_personal_report(input: PipelineResult), save_personal_report
+- [x] `tests/reporter_test.rs` — 5 tests PASS
+- [x] Commit
 
-### [ ] Task 6: reporter
-- [ ] `services/reporter.rs` — generate_personal_report, save_personal_report
-- [ ] `tests/reporter_test.rs` — 5 tests PASS
-- [ ] Commit
+### [x] Task 6: summary
+- [x] `services/summary.rs` — generate_ranking_md, generate_summary_json, save_summary
+- [x] `tests/summary_test.rs` — 4 tests PASS
+- [x] Commit
 
-### [ ] Task 7: summary
-- [ ] `services/summary.rs` — generate_ranking_md, generate_summary_json, save_summary
-- [ ] `tests/summary_test.rs` — 4 tests PASS
-- [ ] Commit
+### [x] Task 7: pipeline
+- [x] `pipeline.rs` — run (4-phase: parse → evaluate → report → summary)
+- [x] `tests/pipeline_integration.rs` — 1 test PASS
+- [x] Commit
 
-### [ ] Task 8: pipeline
-- [ ] `pipeline.rs` — run (5-phase + SHA256 dedup)
-- [ ] `tests/pipeline_integration.rs` — 1 test PASS
-- [ ] Commit
-
-### [ ] Task 9: cli
-- [ ] `cli/mod.rs` — JdList, JdShow from todo!() to real calls
-- [ ] `cargo check` — 0 errors
-- [ ] Commit
+### [x] Task 8: cli
+- [x] `cli/mod.rs` — JdList, JdShow from todo!() to real calls
+- [x] `cargo check` — 0 errors
+- [x] Commit

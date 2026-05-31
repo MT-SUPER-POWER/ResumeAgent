@@ -164,21 +164,26 @@ llm:
 
 ---
 
-## 5. 信息提取器
+## 5. 评估器
 
 | 属性 | 说明 |
 |------|------|
 | 运行位置 | LLM |
 | 依赖 | LLM Client |
-| 输入 | 简历纯文本 (`raw_text`) |
-| 输出 | 结构化 JSON — `ExtractionResult`（见下方 Schema） |
+| 输入 | 简历纯文本 + JD + 两份评分手册 |
+| 输出 | 结构化 JSON — `PipelineResult`（见下方 Schema） |
+| Prompt 管理 | `src/prompts/` 目录，Markdown 模板 + `{{placeholder}}` 占位符 |
 
-### Schema: ExtractionResult
+> **设计原则**：一次 LLM 调用完成信息提取和双维度评分，不拆分为两次调用。提取和评分共用同一段推理上下文，减少 token 浪费，降低延迟，避免提取结果与评分脱节。
 
-**这是提取 prompt 的输出契约。Prompt 中必须指定此 JSON 格式，LLM 返回后用 `serde_json` 校验。**
+### Schema: PipelineResult
+
+**这是评估 prompt 的输出契约。Prompt 中必须指定此 JSON 格式，LLM 返回后用 `serde_json` 校验。落库时拆分为 `extractions.result_json` 和 `scores.result_json` 分别存储。**
 
 ```json
 {
+  "target_role": "实习前端工程师(React)",
+  "best_match_role": "初级前端工程师(React)",
   "candidate": {
     "name": "张三",
     "email": "zhangsan@example.com",
@@ -187,140 +192,42 @@ llm:
     "years_of_experience": 5.0,
     "current_title": "高级前端工程师",
     "education": [
-      {
-        "school": "北京大学",
-        "degree": "本科",
-        "major": "计算机科学与技术",
-        "year": 2018
-      }
+      { "school": "北京大学", "degree": "本科", "major": "计算机科学与技术", "year": 2018 }
     ],
     "skills": ["TypeScript", "React", "Vue", "Node.js"],
     "work_experience": [
       {
-        "company": "ABC科技有限公司",
-        "title": "前端工程师",
+        "company": "ABC科技有限公司", "title": "前端工程师",
         "duration": "2020.06 - 2024.12",
-        "highlights": [
-          "主导微前端架构落地，支撑 5 个业务线独立部署",
-          "搭建组件库，覆盖 80+ 组件，团队采纳率 100%"
-        ]
+        "highlights": ["主导微前端架构落地，支撑 5 个业务线独立部署"]
       }
     ]
   },
   "evidence": {
     "逻辑思维与认知能力": [
-      {
-        "quote": "主导微前端架构落地，支撑 5 个业务线独立部署",
-        "analysis": "架构设计能力，系统性思考",
-        "level": "强"
-      }
+      { "quote": "主导微前端架构落地...", "analysis": "架构设计能力", "level": "强" }
     ],
-    "专业知识与专业技能": [
-      {
-        "quote": "搭建组件库，覆盖 80+ 组件",
-        "analysis": "前端工程化深度，组件设计能力",
-        "level": "强"
-      }
-    ],
+    "专业知识与专业技能": [],
     "创新与AI原生能力": [],
     "决策与问题解决能力": [],
     "组织协作与低自我": [],
     "抗压与韧性": [],
     "职业规划与自驱力": [],
     "履历质量与可信度": []
-  }
-}
-```
-
-### 字段约定
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `candidate.name` | string? | 否 | 无法提取时为 null |
-| `candidate.email` | string? | 否 | |
-| `candidate.phone` | string? | 否 | |
-| `candidate.city` | string? | 否 | |
-| `candidate.years_of_experience` | number? | 否 | 工作年限 |
-| `candidate.current_title` | string? | 否 | 当前/最近职位 |
-| `candidate.education` | array | 是 | 无则为 `[]` |
-| `candidate.skills` | string[] | 是 | 无则为 `[]` |
-| `candidate.work_experience` | array | 是 | 无则为 `[]` |
-| `evidence.<维度>` | array | 是 | 8 个维度，无证据则为 `[]` |
-| `evidence.<维度>[].quote` | string | 是 | 原文引用 |
-| `evidence.<维度>[].analysis` | string | 是 | 分析说明 |
-| `evidence.<维度>[].level` | string | 是 | `"强"` / `"中"` / `"弱"` |
-
-### 8 个证据维度
-
-1. 逻辑思维与认知能力 — 架构设计、系统思考、问题分析
-2. 专业知识与专业技能 — 技术栈深度、工具掌握、证书
-3. 创新与AI原生能力 — 新技术探索、工具开发、AI使用
-4. 决策与问题解决能力 — 技术选型、难题攻关、优化成果
-5. 组织协作与低自我 — 团队合作、跨部门沟通、知识分享
-6. 抗压与韧性 — 高压项目、快速迭代、解决冲突
-7. 职业规划与自驱力 — 持续学习、技术博客、开源贡献
-8. 履历质量与可信度 — 经历连贯性、量化成果、真实性
-
-### Prompt 策略
-
-- System prompt 注入 8 个维度定义和证据等级规则
-- User message 放简历原文
-- 要求严格输出以上 JSON 格式，不得编造信息
-- 找不到证据的维度返回空数组 `[]`
-- LLM 返回后 `serde_json::from_str::<ExtractionResult>()` 校验结构
-
----
-
-## 6. 评分引擎
-
-| 属性 | 说明 |
-|------|------|
-| 运行位置 | LLM |
-| 依赖 | LLM Client |
-| 输入 | `ExtractionResult` JSON + JD + 评分手册 |
-| 输出 | 双维度评分 JSON — `ScoreResult`（见下方 Schema） |
-
-### Schema: ScoreResult
-
-**这是评分 prompt 的输出契约。Prompt 中必须指定此 JSON 格式，LLM 返回后用 `serde_json` 校验。**
-
-```json
-{
+  },
   "talent_rating": {
     "total_score": 72.0,
     "dimensions": [
-      {
-        "name": "逻辑思维与认知能力",
-        "score": 8.0,
-        "evidence_level": "强",
-        "comment": "架构设计能力强，有微前端落地经验"
-      },
-      {
-        "name": "专业知识与专业技能",
-        "score": 9.0,
-        "evidence_level": "强",
-        "comment": "前端工程化深度突出，组件库建设经验丰富"
-      }
+      { "name": "逻辑思维与认知能力", "score": 8.0, "evidence_level": "强", "comment": "架构设计能力强" }
     ]
   },
   "job_matching": {
     "total_score": 68.0,
     "dimensions": [
-      {
-        "name": "硬性条件匹配",
-        "score": 7.0,
-        "evidence_level": "中",
-        "comment": "学历专业匹配，工作年限略低于要求"
-      },
-      {
-        "name": "岗位核心能力匹配",
-        "score": 8.0,
-        "evidence_level": "强",
-        "comment": "React/Vue 技术栈高度匹配"
-      }
+      { "name": "硬性条件匹配", "score": 7.0, "evidence_level": "中", "comment": "工作年限略低于要求" }
     ]
   },
-  "overall_assessment": "候选人前端基础扎实，有架构设计经验，适合中高级前端岗位。建议面试重点考察其跨部门协作和项目推动能力。"
+  "overall_assessment": "候选人前端基础扎实，建议面试重点考察跨部门协作能力。"
 }
 ```
 
@@ -328,17 +235,23 @@ llm:
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `talent_rating.total_score` | number | 是 | 人才质量总分 0-100 |
+| `target_role` | string? | 否 | 候选人自己想应聘的岗位（从简历求职意向提取） |
+| `best_match_role` | string? | 否 | AI 判断候选人最适合的岗位（从 JD 表格匹配） |
+| `candidate` | object | 是 | 候选人基本信息，各字段可为 null |
+| `evidence.<维度>` | array | 是 | 8 个维度，无证据则为 `[]` |
+| `evidence.<维度>[].quote` | string | 是 | 原文引用 |
+| `evidence.<维度>[].analysis` | string | 是 | 分析说明 |
+| `evidence.<维度>[].level` | string | 是 | `"强"` / `"中"` / `"弱"` |
+| `talent_rating.total_score` | number | 是 | 人才质量总分 |
 | `talent_rating.dimensions` | array | 是 | 必须包含全部 8 个维度 |
-| `job_matching.total_score` | number | 是 | 岗位匹配度总分 0-100 |
+| `job_matching.total_score` | number | 是 | 岗位匹配度总分 |
 | `job_matching.dimensions` | array | 是 | 必须包含全部 7 个维度 |
-| `dimensions[].name` | string | 是 | 维度名称 |
 | `dimensions[].score` | number | 是 | 0-10 分 |
 | `dimensions[].evidence_level` | string | 是 | `"强"` / `"中"` / `"弱"` / `"缺失"` |
 | `dimensions[].comment` | string | 是 | 评分依据说明 |
 | `overall_assessment` | string | 是 | 综合评估摘要 |
 
-### 评分维度参考
+### 评分维度
 
 | 人才评级 8 维 | 岗位匹配度 7 维 |
 |-------------|---------------|
@@ -351,22 +264,56 @@ llm:
 | 职业规划与自驱力 | 风险与成本匹配 |
 | 履历质量与可信度 | — |
 
+### 8 个证据维度（与上面人才评级一致）
+
+1. 逻辑思维与认知能力 — 架构设计、系统思考、问题分析
+2. 专业知识与专业技能 — 技术栈深度、工具掌握、证书
+3. 创新与AI原生能力 — 新技术探索、工具开发、AI使用
+4. 决策与问题解决能力 — 技术选型、难题攻关、优化成果
+5. 组织协作与低自我 — 团队合作、跨部门沟通、知识分享
+6. 抗压与韧性 — 高压项目、快速迭代、解决冲突
+7. 职业规划与自驱力 — 持续学习、技术博客、开源贡献
+8. 履历质量与可信度 — 经历连贯性、量化成果、真实性
+
+### Prompt 管理
+
+Prompt 模板存放在 `src/prompts/` 目录，使用 `{{PLACEHOLDER}}` 占位符，运行时替换：
+
+| 占位符 | 替换来源 | 说明 |
+|--------|----------|------|
+| `{{talent_manual}}` | `docs/references/人才评级打分手册-V1.md` | 8 维度评分标准 |
+| `{{match_manual}}` | `docs/references/岗位匹配度评分手册-V1.md` | 7 维度匹配标准 |
+| `{{resume_text}}` | 简历文件解析结果 | 简历纯文本 |
+| `{{job_title}}` | JD 记录 | 岗位名称 |
+| `{{job_department}}` | JD 记录 | 部门 |
+| `{{job_requirements}}` | JD 记录 | 岗位要求 |
+| `{{job_description}}` | JD 记录 | 岗位描述 |
+
 ### Prompt 策略
 
-- System prompt 放两份完整评分手册（`docs/references/人才评级打分手册-V1.md` + `岗位匹配度评分手册-V1.md`）
-- User message 放 `ExtractionResult` JSON + JD 信息
-- 严格按手册的 0-10 评分标准，基于证据打分
-- LLM 返回后 `serde_json::from_str::<ScoreResult>()` 校验结构
+- System prompt 包含提取指令 + 两份评分手册 + 输出格式要求
+- User message 包含简历文本 + JD 信息
+- 要求严格输出以上 JSON 格式，不得编造信息
+- 找不到证据的维度返回空数组 `[]`
+- LLM 返回后 `serde_json::from_str::<PipelineResult>()` 校验
+- 校验通过后拆分为 ExtractionResult 和 ScoreResult 分别落库
+
+### 落库
+
+评估器返回 `PipelineResult` 后，同时写入两张表：
+
+1. `extractions` 表 — `{ candidate, evidence }` 部分
+2. `scores` 表 — `{ talent_rating, job_matching, overall_assessment }` 部分
 
 ---
 
-## 7. 报告生成器
+## 6. 报告生成器
 
 | 属性 | 说明 |
 |------|------|
 | 运行位置 | 本地 |
 | 依赖 | 无（纯字符串拼接） |
-| 输入 | `ExtractionResult` + `ScoreResult` |
+| 输入 | `PipelineResult`（包含 candidate + evidence + 双维度评分） |
 | 输出 | Markdown 格式个人报告 |
 
 ### 接口
@@ -408,7 +355,7 @@ async fn save_personal_report(output_dir: &Path, name: &str, content: &str) -> R
 
 ---
 
-## 8. 汇总引擎
+## 7. 汇总引擎
 
 | 属性 | 说明 |
 |------|------|
@@ -461,7 +408,7 @@ async fn save_summary(output_dir: &Path, md: &str, json: &SummaryJson) -> (Strin
 
 ---
 
-## 9. Pipeline
+## 8. Pipeline
 
 | 属性 | 说明 |
 |------|------|
@@ -475,25 +422,25 @@ async fn save_summary(output_dir: &Path, md: &str, json: &SummaryJson) -> (Strin
 async fn run(resumes_dir: &str, jd_id: &str) -> Result<(), AppError>;
 ```
 
-### 5 阶段流程
+### 4 阶段流程
 
 ```
 Phase 1 (本地)  扫描目录 → SHA256 → parse → upsert resumes
-Phase 2 (LLM)   遍历 → extract(raw_text) → upsert extractions
-Phase 3 (LLM)   遍历 → score(extraction, jd) → upsert scores
-Phase 4 (本地)  遍历 → generate_personal_report → 写 .md
-Phase 5 (本地)  排序 → generate_ranking_md + generate_summary_json → 写文件
+Phase 2 (LLM)   遍历 → evaluate(resume_text, jd) → upsert extractions + scores
+Phase 3 (本地)  遍历 → generate_personal_report → 写 .md
+Phase 4 (本地)  排序 → generate_ranking_md + generate_summary_json → 写文件
 ```
 
 ### 幂等策略
 
 - **Phase 1**: `file_hash` 已存在且 `parse_status=success` → 跳过解析
-- **Phase 2**: `extractions` 表中 `resume_id` 已有 `status=success` → 跳过提取
-- **Phase 3**: `scores` 表中 `(resume_id, jd_id)` 已有 `status=success` → 跳过评分
+- **Phase 2**: `extractions` 表中 `resume_id` 已有 `status=success` → 跳过评估
+- **Phase 3**: 无幂等检查，纯函数直接覆盖写文件
+- **Phase 4**: 无幂等检查，纯函数直接覆盖写文件
 
 ---
 
-## 10. CLI 入口
+## 9. CLI 入口
 
 | 属性 | 说明 |
 |------|------|

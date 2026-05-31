@@ -1,6 +1,10 @@
 # Resume Agent Roadmap
 
-> 最后更新: 2026-05-31 | 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md` | 模块: `docs/architecture/modules.md` | V0.3 设计: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
+> 最后更新: 2026-05-31
+>
+> - 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md`
+> - 模块: `docs/architecture/modules.md`
+> - V0.3 设计: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
 
 ---
 
@@ -13,19 +17,19 @@ gantt
   axisFormat  %m-%d
 
   section MVP
-  V0.1 核心流程     :v01, 2026-06-01, 14d
+  V0.1 核心流程     :v01, 2026-05-28, 3d
 
   section 可靠性
-  V0.2 断点续跑     :v02, after v01, 7d
+  V0.2 断点续跑     :v02, after v01, 2d
 
   section 性能
-  V0.3 并发处理     :v03, after v02, 14d
+  V0.3 并发处理     :v03, after v02, 2d
 
   section 规模化
-  V0.4 预筛选+统计  :v04, after v03, 14d
+  V0.4 预筛选+统计  :v04, after v03, 3d
 
   section Web版
-  V1.0 全栈上线     :v10, after v04, 21d
+  V1.0 全栈上线     :v10, after v04, 4d
 ```
 
 ---
@@ -37,6 +41,7 @@ gantt
 ```mermaid
 flowchart LR
   subgraph V01["V0.1 范围"]
+    direction LR
     A["文件解析"] --> B["LLM 评估<br/>(提取+评分合并)"]
     B --> C["报告生成"]
     C --> D["汇总排名"]
@@ -83,6 +88,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   subgraph V02["V0.2 新增"]
+    direction LR
     A["job_runs + pipeline_states"] --> B["统一追踪每份简历阶段"]
     B --> C["LLM 指数退避重试"]
     C --> D["失败隔离 + --rerun"]
@@ -91,13 +97,13 @@ flowchart LR
 
 ### 交付清单
 
-| #   | 功能              | 说明                                                              |
-| --- | ----------------- | ----------------------------------------------------------------- |
-| 1   | job_runs 操作记录 | UUID PK，每次 run 一条记录，追踪 total/parsed/evaluated/failed/errors |
-| 2   | pipeline_states   | 统一管理每份简历在每个阶段的运行状态 (parse/evaluate)             |
-| 3   | LLM 重试          | 可重试错误(429/5xx/连接超时)自动重试 3 次，指数退避 1s/2s/4s     |
+| #   | 功能              | 说明                                                                       |
+| --- | ----------------- | -------------------------------------------------------------------------- |
+| 1   | job_runs 操作记录 | UUID PK，每次 run 一条记录，追踪 total/parsed/evaluated/failed/errors      |
+| 2   | pipeline_states   | 统一管理每份简历在每个阶段的运行状态 (parse/evaluate)                      |
+| 3   | LLM 重试          | 可重试错误(429/5xx/连接超时)自动重试 3 次，指数退避 1s/2s/4s               |
 | 4   | 失败隔离          | 单份简历任一阶段报错不终止整批，pipeline_states 记录 error_msg 后 continue |
-| 5   | --rerun 命令      | 读取历史 job_run，从上次失败阶段精确续跑，文件缺失则报错          |
+| 5   | --rerun 命令      | 读取历史 job_run，从上次失败阶段精确续跑，文件缺失则报错                   |
 
 ### 不做
 
@@ -123,6 +129,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   subgraph V03["V0.3 新增"]
+    direction LR
     A["Producer-Consumer 管道"] --> B["N 个常驻 worker<br/>--concurrency N"]
     B --> C["Stage 3 DB 汇聚"]
     C --> D["failures 字段<br/>data.json + ranking.md"]
@@ -131,12 +138,12 @@ flowchart LR
 
 ### 交付清单
 
-| #   | 功能              | 说明                                                              |
-| --- | ----------------- | ----------------------------------------------------------------- |
-| 1   | Producer-Consumer | 3-stage 管道：Stage1 解析 → bounded channel → Stage2 N worker 评估 |
-| 2   | 并发控制          | `--concurrency N` (auto=3)，N 个常驻 worker，channel 容量 N×2     |
-| 3   | DB 连接池检查     | 启动时 needed=concurrency×2+2 对比 max_connections，不足则 warn   |
-| 4   | DB 汇聚           | Stage 3 从 DB JOIN pipeline_states 过滤本 run 结果，而非接收 Vec  |
+| #   | 功能              | 说明                                                                |
+| --- | ----------------- | ------------------------------------------------------------------- |
+| 1   | Producer-Consumer | 3-stage 管道：Stage1 解析 → bounded channel → Stage2 N worker 评估  |
+| 2   | 并发控制          | `--concurrency N` (auto=3)，N 个常驻 worker，channel 容量 N×2       |
+| 3   | DB 连接池检查     | 启动时 needed=concurrency×2+2 对比 max_connections，不足则 warn     |
+| 4   | DB 汇聚           | Stage 3 从 DB JOIN pipeline_states 过滤本 run 结果，而非接收 Vec    |
 | 5   | 失败清单          | data.json 新增 summary + failures 字段，ranking.md 新增处理失败章节 |
 
 ### 不做
@@ -189,8 +196,9 @@ flowchart LR
 **目标**: HR 通过浏览器完成全流程
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph V10["V1.0 架构"]
+    direction LR
     Frontend["Frontend<br/>(上传/查看/筛选)"]
     Backend["Backend<br/>(REST API)"]
     Core["核心引擎<br/>(复用 CLI 逻辑)"]

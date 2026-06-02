@@ -68,6 +68,20 @@ Windows PowerShell：
 
 > 默认后端镜像名为 `resume-agent-backend:dev`，由脚本使用 Docker Desktop 本机 Docker daemon 构建，并传入 `PDFIUM_VERSION=7869`。后端 Dockerfile 会按 Docker 目标架构自动下载对应的 pdfium Linux 动态库，支持 `linux/amd64` 和 `linux/arm64`。
 
+### 后端镜像构建加速
+
+后端 Dockerfile 使用 **cargo-chef** 将「依赖编译」与「业务代码编译」拆成两层，并配合 BuildKit 的 `registry` / `git` / `target` 缓存：
+
+| 变更类型 | 典型耗时（本机二次构建） |
+| -------- | ------------------------ |
+| 仅改 `src/` | 数十秒～数分钟（只链业务 crate） |
+| 改 `Cargo.toml` / `Cargo.lock` | 与全量相近（需重编依赖） |
+| 首次冷启动 | 与全量相近（需拉取并编译全部依赖） |
+
+镜像内使用 `profile.docker`（`Cargo.toml` 中定义），关闭 LTO、提高 `codegen-units`，换取更快编译；本地发版仍可用默认 `cargo build --release`。
+
+本地开发：`cd repo/backend && cargo docker-build`（见 `.cargo/config.toml` 别名）。
+
 可通过环境变量覆盖构建与部署参数：
 
 | 变量 | 默认值 | 用途 |

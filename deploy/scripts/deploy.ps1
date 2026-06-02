@@ -126,6 +126,8 @@ function Pg-Psql {
 }
 
 function Backend-Build {
+  # NOTE: BuildKit 启用 cache mount（Dockerfile syntax=docker/dockerfile:1）
+  $env:DOCKER_BUILDKIT = "1"
   $dockerArgs = @("build")
   if ($BackendPlatform) {
     $dockerArgs += @("--platform", $BackendPlatform)

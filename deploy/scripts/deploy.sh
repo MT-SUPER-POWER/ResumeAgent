@@ -91,6 +91,8 @@ pg_psql() {
 }
 
 backend_build() {
+  # NOTE: BuildKit 启用 cache mount（Dockerfile syntax=docker/dockerfile:1）
+  export DOCKER_BUILDKIT=1
   if [ -n "$BACKEND_PLATFORM" ]; then
     docker build \
       --platform "$BACKEND_PLATFORM" \

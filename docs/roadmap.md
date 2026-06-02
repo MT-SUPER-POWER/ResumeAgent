@@ -1,10 +1,12 @@
 # Resume Agent Roadmap
 
-> 最后更新: 2026-05-31
+> 最后更新: 2026-06-02
 >
 > - 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md`
 > - 模块: `docs/architecture/modules.md`
 > - V0.3 设计: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
+> - V0.4 设计: `docs/superpowers/specs/2026-06-01-v0.4-token-cost-design.md`
+> - V1.0 API 设计: `docs/superpowers/specs/2026-06-02-v1.0-api-design.md`
 
 ---
 
@@ -25,11 +27,12 @@ gantt
   section 性能
   V0.3 并发处理     :v03, after v02, 2d
 
-  section 规模化
-  V0.4 预筛选+统计  :v04, after v03, 3d
+  section 模型治理
+  V0.4 Token成本追踪 :v04, after v03, 2d
 
   section Web版
-  V1.0 全栈上线     :v10, after v04, 4d
+  V1.0 Phase 1 REST API  :v10a, after v04, 3d
+  V1.0 Phase 2 前端面板   :v10b, after v10a, 4d
 ```
 
 ---
@@ -160,64 +163,104 @@ flowchart LR
 
 ---
 
-## V0.4 — 规模化
+## V0.4 — 模型治理与成本追踪
 
-**目标**: 几百份简历高效处理，产出 HR 友好的交付物
+**目标**: 数据库驱动的模型管理，完整 Token/费用追踪，支持多中转灵活切换
+
+> **架构设计**: `docs/superpowers/specs/2026-06-01-v0.4-token-cost-design.md`
 
 ```mermaid
 flowchart LR
   subgraph V04["V0.4 新增"]
-    A["关键词预筛选"] --> B["过滤明显不相关简历"]
-    C["Top K 深度分析"] --> D["只对前 N 名出详细报告"]
-    E["成本统计"] --> F["每轮运行 token/费用"]
-    G["Excel 导出"] --> H["HR 直接可用"]
+    direction LR
+    A["models 表 + 加密存储"] --> B["Router 层<br/>查表路由 + 统一计费"]
+    C["AES-256-GCM 加密"] --> A
+    B --> D["job_run 累计<br/>total_tokens / total_cost"]
+    E["CLI model 子命令"] --> A
   end
 ```
 
 ### 交付清单
 
-| #   | 功能           | 说明                                          |
-| --- | -------------- | --------------------------------------------- |
-| 1   | 本地预筛选     | 基于 JD 关键词 + 规则粗筛                     |
-| 2   | Top K 深度分析 | `--top-k-detail 50`，只对前 50 名生成完整报告 |
-| 3   | 成本统计       | 每轮运行的 token 消耗 + 费用汇总              |
-| 4   | Excel 导出     | `resume-agent export --format excel`          |
+| #   | 功能             | 说明                                                                                                       |
+| --- | ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | models 表        | DB 注册模型（name/protocol/input_price/output_price/encrypted_key/base_url/enabled），种子内置常见模型     |
+| 2   | AES-256-GCM 加密 | `utils/crypto.rs`，api_key 加密落库，MASTER_KEY 来自 yaml 配置                                             |
+| 3   | Router 层        | 查 models 表路由到 openai/claude handler，统一计费，协议扩展点预留                                         |
+| 4   | job_run 成本字段 | `total_tokens` + `total_cost`，每次 LLM 调用原子累加                                                       |
+| 5   | CLI model 命令   | add / list / set-price / enable / disable / remove                                                         |
+| 6   | run --model      | 指定本次运行使用的模型，不传默认用第一个 enabled                                                           |
+| 7   | 配置重构         | `application.default.yaml` 模板（提交）+ `application.yaml` 真实配置（gitignore），移除旧的 llm 硬编码字段 |
+
+### 不做
+
+- 预筛选、TopK、Excel 导出 — 推迟到 V1.0 前端实现
+- 自动从官网拉取定价 — 三方中转价格与官方无关
 
 ### 验收标准
 
-- 500 份简历通过预筛选后送入 LLM ≤ 200 份
-- Top K 模式成本比全量详细分析降低 60%+
-- Excel 格式可直接用于 HR 周报
+- `resume-agent model add gpt-4o --protocol openai --api-key sk-xxx --input-price 2.5 --output-price 10.0` 成功加密落库
+- `resume-agent run --dir ./resumes --model gpt-4o` 全程使用指定模型，费用实时计算
+- job_runs 表 `total_tokens` / `total_cost` 准确反映当次运行总消耗
+- 两个并发 worker 同时累加 token 数不丢失（原子 UPDATE）
 
 ---
 
 ## V1.0 — Web 版
 
-**目标**: HR 通过浏览器完成全流程
+**目标**: HR 通过浏览器完成全流程，含筛选、导出等前端交互
+
+> **设计文档**: `docs/superpowers/specs/2026-06-02-v1.0-api-design.md`
+
+V1.0 拆为两个阶段：
+
+### Phase 1 — REST API
+
+将所有 CLI 命令抽象为 `/api/v1/*` 端点，Actix-web 嵌入现有 Rust 项目。
 
 ```mermaid
 flowchart LR
-  subgraph V10["V1.0 架构"]
+  subgraph V10P1["V1.0 Phase 1"]
     direction LR
-    Frontend["Frontend<br/>(上传/查看/筛选)"]
-    Backend["Backend<br/>(REST API)"]
+    API["REST API<br/>(Actix-web)"]
     Core["核心引擎<br/>(复用 CLI 逻辑)"]
     DB[(PostgreSQL)]
 
-    Frontend --> Backend
-    Backend --> Core
+    API --> Core
     Core --> DB
   end
 ```
 
-### 交付清单
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | JWT 认证 | Rust 侧签发 + 校验，hardcoded 用户 + role，无密码 |
+| 2 | Jobs API | 上传/提交/查询/重跑，SSE 实时进度推送 |
+| 3 | JDs API | 岗位描述 CRUD |
+| 4 | Models API | 模型管理（只读全员，写操作 admin） |
+| 5 | System API | DB 状态、重置、缓存清理（admin only） |
+| 6 | 统一响应格式 | `{ code, msg, data, detail }` 信封 + 错误码体系 |
+| 7 | SSE 事件规范 | 状态快照流：job_started / stage / progress / warning / error / heartbeat / complete |
+| 8 | serve 子命令 | `resume-agent serve --port 8080` 启动 HTTP 服务 |
 
-| #   | 功能     | 说明                                           |
-| --- | -------- | ---------------------------------------------- |
-| 1   | 前端应用 | `repo/frontend/`，简历上传、评分查看、筛选排序 |
-| 2   | REST API | `repo/backend/` 增加 API 层                    |
-| 3   | 用户系统 | HR 登录，多 HR 数据隔离                        |
-| 4   | 结果看板 | 可视化排名、维度对比                           |
+### Phase 2 — 前端面板
+
+基于 Next.js + shadcn，参考 `docs/references/next-shadcn-admin-dashboard/` 的 AccountSwitcher 角色切换模式。
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | 前端应用 | `repo/frontend/`，简历上传、评分查看、筛选排序 |
+| 2 | 双角色面板 | Admin 面板（模型管理 + 系统设置）+ HR 面板（简历评估 + 结果查看） |
+| 3 | 结果看板 | 可视化排名、维度对比 |
+| 4 | 筛选过滤 | 基于 skills/years/city/scores 等多维度筛选 |
+| 5 | TopK 报告 | 前端自由选择前 N 名导出 |
+| 6 | Excel 导出 | 前端按筛选结果导出 Excel |
+| 7 | 管理设置页 | Admin 专属：模型管理、DB 运维、缓存清理等危险操作 |
+
+### 不做（V1.0 移除）
+
+- 用户注册/登录（hardcoded 用户 + JWT 切换）
+- 多 HR 数据隔离（单空间，全局可见）
+- 模型价格历史审计
 
 ---
 
@@ -236,7 +279,13 @@ flowchart LR
 
 ## 技术债务跟踪
 
-| #   | 问题                                                                 | 版本 | 状态                     |
-| --- | -------------------------------------------------------------------- | ---- | ------------------------ |
-| 1   | LLM provider 切换目前仅支持 OpenAI / Claude，如需扩展需改 LLM Client | V0.1 | 架构预留了抽象接口       |
-| 2   | Prompt 无版本管理，修改后无法回滚对比                                | V0.3 | 建议后续加 prompt 版本号 |
+| #   | 问题                                                             | 版本 | 状态                           |
+| --- | ---------------------------------------------------------------- | ---- | ------------------------------ |
+| 1   | LLM provider 切换目前仅支持 OpenAI / Claude，如需扩展需改 Router | V0.1 | V0.4 Router 已预留 NOTE 扩展点 |
+| 2   | Prompt 无版本管理，修改后无法回滚对比                            | V0.3 | 建议后续加 prompt 版本号       |
+| 3   | 模型价格无历史审计，调价后历史 job_run 无法回溯当时单价          | V0.4 | 后续可加 price_snapshots 表    |
+| 4   | 用户工作空间隔离                                    | V1.0 | 无 workspace 概念，模型和 job 全局可见 |
+| 5   | 模型分层（官方 vs 自定义）                          | V1.0 | sync-prices 行为与角色权限交叉，需先设计分层模型 |
+| 6   | 用户数据持久化                                      | V1.0 | hardcoded 用户表，无注册/删除/修改流程 |
+| 7   | Token 撤销机制                                      | V1.0 | 无黑名单、无 refresh token |
+| 8   | Rate Limiting                                       | V1.0 | V0.2 重试覆盖基本韧性，API 层限流后续加 |

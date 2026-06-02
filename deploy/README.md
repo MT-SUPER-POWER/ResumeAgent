@@ -13,7 +13,7 @@ deploy/
 │   ├── backend-secret.yaml         # 后端 application.local.yaml
 │   ├── backend-serviceaccount.yaml # 后端 ServiceAccount
 │   └── backend-deployment.yaml     # 后端 API Deployment
-├── pod/
+├── pg/
 │   ├── postgres-pvc.yaml           # 持久化存储 (10Gi)
 │   └── postgres-statefulset.yaml   # PostgreSQL 16 Alpine
 └── svc/

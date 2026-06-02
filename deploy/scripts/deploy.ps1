@@ -81,8 +81,8 @@ function Pg-Up {
   Write-Host "[2/4] secret" -ForegroundColor Yellow
   kubectl apply -f "$ROOT\secret.yaml"
   Write-Host "[3/4] statefulset + pvc" -ForegroundColor Yellow
-  kubectl apply -f "$ROOT\pod\postgres-pvc.yaml"
-  kubectl apply -f "$ROOT\pod\postgres-statefulset.yaml"
+  kubectl apply -f "$ROOT\pg\postgres-pvc.yaml"
+  kubectl apply -f "$ROOT\pg\postgres-statefulset.yaml"
   Write-Host "[4/4] service" -ForegroundColor Yellow
   kubectl apply -f "$ROOT\svc\postgres-service.yaml"
 
@@ -93,8 +93,8 @@ function Pg-Up {
 
 function Pg-Down {
   kubectl delete -f "$ROOT\svc\postgres-service.yaml" --ignore-not-found
-  kubectl delete -f "$ROOT\pod\postgres-statefulset.yaml" --ignore-not-found
-  kubectl delete -f "$ROOT\pod\postgres-pvc.yaml" --ignore-not-found
+  kubectl delete -f "$ROOT\pg\postgres-statefulset.yaml" --ignore-not-found
+  kubectl delete -f "$ROOT\pg\postgres-pvc.yaml" --ignore-not-found
   kubectl delete -f "$ROOT\secret.yaml" --ignore-not-found
   Write-Host "PostgreSQL removed. Namespace kept." -ForegroundColor Green
 }

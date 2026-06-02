@@ -47,8 +47,8 @@ pg_up() {
   echo "[2/4] secret"
   kubectl apply -f "$ROOT/secret.yaml"
   echo "[3/4] statefulset + pvc"
-  kubectl apply -f "$ROOT/pod/postgres-pvc.yaml"
-  kubectl apply -f "$ROOT/pod/postgres-statefulset.yaml"
+  kubectl apply -f "$ROOT/pg/postgres-pvc.yaml"
+  kubectl apply -f "$ROOT/pg/postgres-statefulset.yaml"
   echo "[4/4] service"
   kubectl apply -f "$ROOT/svc/postgres-service.yaml"
 
@@ -59,8 +59,8 @@ pg_up() {
 
 pg_down() {
   kubectl delete -f "$ROOT/svc/postgres-service.yaml" --ignore-not-found
-  kubectl delete -f "$ROOT/pod/postgres-statefulset.yaml" --ignore-not-found
-  kubectl delete -f "$ROOT/pod/postgres-pvc.yaml" --ignore-not-found
+  kubectl delete -f "$ROOT/pg/postgres-statefulset.yaml" --ignore-not-found
+  kubectl delete -f "$ROOT/pg/postgres-pvc.yaml" --ignore-not-found
   kubectl delete -f "$ROOT/secret.yaml" --ignore-not-found
   echo "PostgreSQL removed. Namespace kept."
 }

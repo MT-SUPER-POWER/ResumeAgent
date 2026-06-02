@@ -8,8 +8,7 @@ spec:
   selector:
     app: resume-agent-backend
   ports:
-    - port: 8080
+    - port: 30080
       targetPort: http
-      nodePort: 30080
       protocol: TCP
       name: http

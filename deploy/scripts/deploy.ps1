@@ -190,23 +190,23 @@ function Backend-Logs {
 
 function Backend-Connect {
   $lbIp = ""
-  $nodePort = ""
+  $servicePort = ""
   try {
     $lbIp = kubectl get svc resume-agent-backend -n $Namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
-    $nodePort = kubectl get svc resume-agent-backend -n $Namespace -o jsonpath='{.spec.ports[0].nodePort}' 2>$null
+    $servicePort = kubectl get svc resume-agent-backend -n $Namespace -o jsonpath='{.spec.ports[0].port}' 2>$null
   } catch {
     $lbIp = ""
-    $nodePort = ""
+    $servicePort = ""
   }
 
   Write-Host ""
   Write-Host "=== Backend ===" -ForegroundColor Cyan
   Write-Host ""
-  if ($lbIp) {
-    Write-Host "  load balancer: http://$lbIp:8080"
+  if ($servicePort) {
+    Write-Host "  local:         http://localhost:$servicePort"
   }
-  if ($nodePort) {
-    Write-Host "  node port:     http://localhost:$nodePort"
+  if ($lbIp) {
+    Write-Host "  load balancer: http://$lbIp:30080"
   }
   Write-Host "  cluster dns:   http://resume-agent-backend.resume-agent:8080"
   Write-Host "  image:         $BackendImage"

@@ -157,18 +157,18 @@ backend_logs() {
 
 backend_connect() {
   local lb_ip
-  local node_port
+  local service_port
   lb_ip="$(kubectl get svc resume-agent-backend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
-  node_port="$(kubectl get svc resume-agent-backend -n "$NAMESPACE" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || true)"
+  service_port="$(kubectl get svc resume-agent-backend -n "$NAMESPACE" -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || true)"
 
   echo ""
   echo "=== Backend ==="
   echo ""
-  if [ -n "$lb_ip" ]; then
-    echo "  load balancer: http://$lb_ip:8080"
+  if [ -n "$service_port" ]; then
+    echo "  local:         http://localhost:$service_port"
   fi
-  if [ -n "$node_port" ]; then
-    echo "  node port:     http://localhost:$node_port"
+  if [ -n "$lb_ip" ]; then
+    echo "  load balancer: http://$lb_ip:30080"
   fi
   echo "  cluster dns:   http://resume-agent-backend.resume-agent:8080"
   echo "  image:         $BACKEND_IMAGE"

@@ -1,0 +1,8 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "repo/backend/Cargo.toml"
+  ],
+  "rust-analyzer.cargo.loadOutDirsFromCheck": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.checkOnSave.command": "clippy"
+}

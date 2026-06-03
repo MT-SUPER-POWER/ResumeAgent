@@ -23,22 +23,22 @@ gantt
   V0.1 核心流程     :v01, 2026-05-28, 3d
 
   section 可靠性
-  V0.2 断点续跑     :v02, after v01, 2d
+  V0.2 断点续跑     :v02, 2026-05-31, 2d
 
   section 性能
-  V0.3 并发处理     :v03, after v02, 2d
+  V0.3 并发处理     :v03, 2026-06-02, 2d
 
   section 模型治理
-  V0.4 Token成本追踪 :v04, after v03, 2d
+  V0.4 Token成本追踪 :v04, 2026-06-04, 2d
 
   section API服务化
-  V1.0 REST API        :v10, after v04, 3d
+  V1.0 REST API        :v10, 2026-06-06, 3d
 
   section Web管理面板
-  V1.1A 前端底座鉴权    :v11a, after v10, 2d
-  V1.1B HR分析闭环      :v11b, after v11a, 3d
-  V1.1C 评估筛选导出    :v11c, after v11b, 3d
-  V1.1D Admin管理面板   :v11d, after v11c, 2d
+  V1.1A 前端底座鉴权    :v11a, 2026-06-09, 2d
+  V1.1B HR分析闭环      :v11b, 2026-06-11, 3d
+  V1.1C 评估筛选导出    :v11c, 2026-06-14, 3d
+  V1.1D Admin管理面板   :v11d, 2026-06-17, 2d
 ```
 
 ---

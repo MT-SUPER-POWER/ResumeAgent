@@ -110,27 +110,49 @@ backend_build() {
     "$ROOT/../repo/backend"
 }
 
+backend_prepare_deploy_image() {
+  local image_id
+  local source_tag
+  local image_repo
+  local deploy_image
+
+  image_id="$(docker image inspect --format '{{.Id}}' "$BACKEND_IMAGE")"
+  image_id="${image_id#sha256:}"
+  source_tag="$(docker image inspect --format '{{index .RepoTags 0}}' "$BACKEND_IMAGE")"
+  image_repo="${source_tag%:*}"
+  deploy_image="${image_repo}:deploy-${image_id:0:12}"
+
+  # NOTE: 唯一标签确保 Docker Desktop Kubernetes 不会复用旧的 :dev 镜像。
+  docker tag "$BACKEND_IMAGE" "$deploy_image"
+  printf '%s\n' "$deploy_image"
+}
+
 backend_apply() {
+  local deploy_image="${1:-$BACKEND_IMAGE}"
+
   kubectl apply -f "$ROOT/backend/backend-serviceaccount.yaml"
   kubectl apply -f "$ROOT/backend/backend-secret.yaml"
   kubectl apply -f "$ROOT/backend/backend-deployment.yaml"
   kubectl apply -f "$ROOT/svc/backend-service.yaml"
-  kubectl set image deployment/resume-agent-backend backend="$BACKEND_IMAGE" -n "$NAMESPACE"
+  kubectl set image deployment/resume-agent-backend backend="$deploy_image" -n "$NAMESPACE"
 }
 
 backend_up() {
+  local deploy_image
+
   echo "[1/4] namespace"
   kubectl apply -f "$ROOT/namespace.yaml"
   echo "[2/4] PostgreSQL"
   pg_up
   echo "[3/4] backend image"
   backend_build
+  deploy_image="$(backend_prepare_deploy_image)"
+  echo "Deploy image: $deploy_image"
   echo "[4/4] backend workload"
-  backend_apply
-  kubectl rollout restart deployment/resume-agent-backend -n "$NAMESPACE"
+  backend_apply "$deploy_image"
 
   echo "Waiting for backend..."
-  kubectl wait --for=condition=available deployment/resume-agent-backend -n "$NAMESPACE" --timeout=180s
+  kubectl rollout status deployment/resume-agent-backend -n "$NAMESPACE" --timeout=180s
   echo "Done. Run 'deploy.sh backend connect' for endpoint info."
 }
 

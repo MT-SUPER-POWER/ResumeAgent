@@ -143,12 +143,23 @@ function Backend-Build {
   & docker @dockerArgs
 }
 
-function Backend-Apply {
+function Get-BackendDeployImage {
+  $imageId = (docker image inspect --format '{{.Id}}' $BackendImage).Replace("sha256:", "")
+  $sourceTag = docker image inspect --format '{{index .RepoTags 0}}' $BackendImage
+  $imageRepo = $sourceTag -replace ':[^/:]+$', ''
+  $deployImage = "${imageRepo}:deploy-$($imageId.Substring(0, 12))"
+
+  # NOTE: 唯一标签确保 Docker Desktop Kubernetes 不会复用旧的 :dev 镜像。
+  docker tag $BackendImage $deployImage
+  return $deployImage
+}
+
+function Backend-Apply($DeployImage = $BackendImage) {
   kubectl apply -f "$ROOT\backend\backend-serviceaccount.yaml"
   kubectl apply -f "$ROOT\backend\backend-secret.yaml"
   kubectl apply -f "$ROOT\backend\backend-deployment.yaml"
   kubectl apply -f "$ROOT\svc\backend-service.yaml"
-  kubectl set image deployment/resume-agent-backend "backend=$BackendImage" -n $Namespace
+  kubectl set image deployment/resume-agent-backend "backend=$DeployImage" -n $Namespace
 }
 
 function Backend-Up {
@@ -158,12 +169,13 @@ function Backend-Up {
   Pg-Up
   Write-Host "[3/4] backend image" -ForegroundColor Yellow
   Backend-Build
+  $deployImage = Get-BackendDeployImage
+  Write-Host "Deploy image: $deployImage" -ForegroundColor Cyan
   Write-Host "[4/4] backend workload" -ForegroundColor Yellow
-  Backend-Apply
-  kubectl rollout restart deployment/resume-agent-backend -n $Namespace
+  Backend-Apply $deployImage
 
   Write-Host "Waiting for backend..." -ForegroundColor Cyan
-  kubectl wait --for=condition=available deployment/resume-agent-backend -n $Namespace --timeout=180s
+  kubectl rollout status deployment/resume-agent-backend -n $Namespace --timeout=180s
   Write-Host "Done. Run 'deploy.ps1 backend connect' for endpoint info." -ForegroundColor Green
 }
 

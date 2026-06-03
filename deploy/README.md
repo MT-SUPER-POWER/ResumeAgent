@@ -67,6 +67,8 @@ Windows PowerShell：
 | Cluster DNS (集群内) | `http://resume-agent-backend.resume-agent:8080`        |
 
 > 默认后端镜像名为 `resume-agent-backend:dev`，由脚本使用 Docker Desktop 本机 Docker daemon 构建，并传入 `PDFIUM_VERSION=7869`。后端 Dockerfile 会按 Docker 目标架构自动下载对应的 pdfium Linux 动态库，支持 `linux/amd64` 和 `linux/arm64`。
+>
+> `backend up` 构建完成后会根据镜像 ID 生成不可变部署标签，例如 `resume-agent-backend:deploy-9c827f2a681f`。这样每次构建都会触发真实的滚动更新，避免 Kubernetes 因复用 `resume-agent-backend:dev` 而继续运行旧版 API。
 
 ### 后端镜像构建加速
 

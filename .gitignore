@@ -1,6 +1,9 @@
 # template that should be ignored by git
 docs/references/actix-template
 
+# local implementation worktrees
+.worktrees/
+
 # claude
 .claude/settings.local.json
 

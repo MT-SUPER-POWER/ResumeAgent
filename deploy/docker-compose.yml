@@ -7,7 +7,7 @@ services:
       POSTGRES_DB: resume_agent
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
-      - "30432:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -25,6 +25,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - ./backend-config/application.local.yaml:/app/application.local.yaml:ro
       - logs:/app/logs
       - output:/app/output
     depends_on:

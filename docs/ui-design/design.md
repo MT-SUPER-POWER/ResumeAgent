@@ -1,13 +1,13 @@
 # ResumeAgent Web UI 设计系统
 
-> 状态: V0.2 模板继承规范
+> 状态: V0.3 模板唯一来源规范
 > 适用范围: ResumeAgent Web 端 B 端后台管理界面
 > 参考模板: `docs/references/next-shadcn-admin-dashboard/`
 > 关联页面结构: `docs/ui-design/page-structure.md`
 
 ## 核心原则
 
-ResumeAgent Web UI 不重新设计一套 Dashboard。所有前端页面必须继承 `next-shadcn-admin-dashboard` 的布局、组件、主题和交互体系，再把 ResumeAgent 的业务导航、API 数据和页面内容接进去。
+ResumeAgent Web UI 不重新设计一套 Dashboard，也不再使用 Figma 设计稿作为落地依据。所有前端页面必须继承 `next-shadcn-admin-dashboard` 的布局、组件、主题和交互体系，再把 ResumeAgent 的业务导航、API 数据和页面内容接进去。
 
 一句话验收标准:
 
@@ -58,6 +58,7 @@ ResumeAgent Web UI 不重新设计一套 Dashboard。所有前端页面必须继
 
 以下行为禁止:
 
+- 按 Figma 设计稿、旧页面稿或旧自定义设计系统重建 Web UI。
 - 手写新的 `AppShell`、`TopNav`、`Sidebar` 替代模板结构。
 - 新增一套与模板重复的基础 UI 组件。
 - 使用自定义浅灰后台风格覆盖模板的主题和组件状态。
@@ -245,12 +246,15 @@ Admin 用户可见 `系统管理`；普通 HR 用户只看到 `核心工作` 和
 - 暗色模式是否可用，且没有硬编码浅色样式导致不可读。
 - 业务色和状态色是否通过 token / class 体系表达，而不是散落 raw hex。
 
-## Figma 约束
+## Figma 处理规则
 
-现有 Figma 设计稿只能作为业务信息架构和页面内容参考，不再作为独立视觉系统来源。
+现有 Figma 设计稿完全不再使用。它不作为视觉风格、布局结构、组件规范、页面密度、色彩、间距或交互的参考来源。
 
-Figma 后续如需继续维护，应重建为模板继承版:
+后续 Web UI 重塑只允许依据:
 
-- Foundations 对齐模板 CSS variables 和 shadcn/ui token。
-- Components 对齐模板 `src/components/ui`。
-- Pages 只表达 ResumeAgent 业务内容，不重新发明 Dashboard 壳。
+- `docs/references/next-shadcn-admin-dashboard/`
+- `docs/ui-design/design.md`
+- `docs/ui-design/page-structure.md`
+- ResumeAgent 业务 specs 和 API 文档
+
+如果 Figma、旧设计稿或历史文档与参考模板冲突，以参考模板为准。

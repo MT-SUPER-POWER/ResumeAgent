@@ -63,6 +63,7 @@ match protocol {
 
 - ResumeAgent Web 管理面板必须继承参考模板 `docs/references/next-shadcn-admin-dashboard/` 的视觉风格、布局结构、组件体系和交互习惯。
 - 禁止脱离参考模板重新手写一套 Dashboard Shell、Sidebar、Navbar、Theme、Layout Controls 或基础 UI 组件。
+- Figma 设计稿不再作为 Web UI 设计或实现依据；后续前端重塑只按照现有参考模板落地。
 - Web 前端落地前必须先阅读并对齐以下模板文件：
   - `docs/references/next-shadcn-admin-dashboard/README.md`
   - `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/layout.tsx`
@@ -73,6 +74,7 @@ match protocol {
 - `repo/frontend` 的页面、组件、导航和主题实现应优先从参考模板迁移或适配；只有 ResumeAgent 业务数据、API 对接、权限逻辑、页面文案和导航项允许按业务改造。
 - 设计文档以 `docs/ui-design/design.md` 为准。该文档必须明确记录模板继承关系、允许改造范围和禁止偏离项；修改 Web UI 设计时必须同步更新该文档。
 - 视觉验收标准：页面看起来应与参考模板属于同一套产品，而不是“参考模板 + 另一套自定义后台”的拼接。
+- 若 Figma、旧设计稿、旧 `design.md` 草案与参考模板冲突，以参考模板为唯一准绳。
 - 提交 Web UI 变更前，必须自查：
   - 是否保留模板的 `SidebarProvider` / `SidebarInset` / 可折叠侧边栏模式。
   - 是否复用模板 shadcn/ui 组件和 token，而不是新增重复基础组件。

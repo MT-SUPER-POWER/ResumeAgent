@@ -1,12 +1,13 @@
 # Resume Agent Roadmap
 
-> 最后更新: 2026-06-02
+> 最后更新: 2026-06-03
 >
 > - 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md`
 > - 模块: `docs/architecture/modules.md`
 > - V0.3 设计: `docs/superpowers/specs/2026-05-31-v0.3-concurrency-design.md`
 > - V0.4 设计: `docs/superpowers/specs/2026-06-01-v0.4-token-cost-design.md`
 > - V1.0 API 设计: `docs/superpowers/specs/2026-06-02-v1.0-api-design.md`
+> - V1.1 Web 设计: `docs/superpowers/specs/2026-06-03-v1.1-web-console-design.md`
 
 ---
 
@@ -30,9 +31,14 @@ gantt
   section 模型治理
   V0.4 Token成本追踪 :v04, after v03, 2d
 
-  section Web版
-  V1.0 Phase 1 REST API  :v10a, after v04, 3d
-  V1.0 Phase 2 前端面板   :v10b, after v10a, 4d
+  section API服务化
+  V1.0 REST API        :v10, after v04, 3d
+
+  section Web管理面板
+  V1.1A 前端底座鉴权    :v11a, after v10, 2d
+  V1.1B HR分析闭环      :v11b, after v11a, 3d
+  V1.1C 评估筛选导出    :v11c, after v11b, 3d
+  V1.1D Admin管理面板   :v11d, after v11c, 2d
 ```
 
 ---
@@ -194,7 +200,7 @@ flowchart LR
 
 ### 不做
 
-- 预筛选、TopK、Excel 导出 — 推迟到 V1.0 前端实现
+- 预筛选、TopK、Excel 导出 — 推迟到 V1.1C 前端实现
 - 自动从官网拉取定价 — 三方中转价格与官方无关
 
 ### 验收标准
@@ -206,21 +212,17 @@ flowchart LR
 
 ---
 
-## V1.0 — Web 版
+## V1.0 — REST API 服务化
 
-**目标**: HR 通过浏览器完成全流程，含筛选、导出等前端交互
+**目标**: 将 CLI 能力服务化，为 Web 管理面板提供稳定的认证、任务、结果、模型和系统管理接口。
 
 > **设计文档**: `docs/superpowers/specs/2026-06-02-v1.0-api-design.md`
-
-V1.0 拆为两个阶段：
-
-### Phase 1 — REST API
 
 将所有 CLI 命令抽象为 `/api/v1/*` 端点，Actix-web 嵌入现有 Rust 项目。
 
 ```mermaid
 flowchart LR
-  subgraph V10P1["V1.0 Phase 1"]
+  subgraph V10["V1.0 REST API"]
     direction LR
     API["REST API<br/>(Actix-web)"]
     Core["核心引擎<br/>(复用 CLI 逻辑)"]
@@ -233,34 +235,97 @@ flowchart LR
 
 | # | 功能 | 说明 |
 |---|------|------|
-| 1 | JWT 认证 | Rust 侧签发 + 校验，hardcoded 用户 + role，无密码 |
+| 1 | JWT 认证 | users 表 + bcrypt 密码 + JWT，role 分为 admin / user |
 | 2 | Jobs API | 上传/提交/查询/重跑，SSE 实时进度推送 |
 | 3 | JDs API | 岗位描述 CRUD |
 | 4 | Models API | 模型管理（只读全员，写操作 admin） |
-| 5 | System API | DB 状态、重置、缓存清理（admin only） |
-| 6 | 统一响应格式 | `{ code, msg, data, detail }` 信封 + 错误码体系 |
-| 7 | SSE 事件规范 | 状态快照流：job_started / stage / progress / warning / error / heartbeat / complete |
-| 8 | serve 子命令 | `resume-agent serve --port 8080` 启动 HTTP 服务 |
+| 5 | Users API | 用户列表、创建、角色调整、禁用和恢复（admin only） |
+| 6 | System API | DB 状态、重置、缓存清理（admin only） |
+| 7 | 统一响应格式 | `{ code, msg, data, detail }` 信封 + 错误码体系 |
+| 8 | SSE 事件规范 | 状态快照流：job_started / stage / progress / warning / error / heartbeat / complete |
+| 9 | serve 子命令 | `resume-agent serve --port 8080` 启动 HTTP 服务 |
 
-### Phase 2 — 前端面板
+### 验收标准
 
-基于 Next.js + shadcn，参考 `docs/references/next-shadcn-admin-dashboard/` 的 AccountSwitcher 角色切换模式。
+- `resume-agent serve --port 8080` 可启动 HTTP 服务。
+- Auth / Jobs / JDs / Models / Users / System API 按角色权限返回统一响应信封。
+- `POST /api/v1/jobs` 可提交批量简历并通过 SSE 推送实时进度。
+- `GET /api/v1/jobs/{id}/results` 可返回完整结构化结果，前端无需解析 Markdown。
+
+---
+
+## V1.1 — Web 管理面板
+
+**目标**: HR 和 Admin 通过浏览器完成核心工作流，前端基于 Next.js + shadcn，参考 `docs/references/next-shadcn-admin-dashboard/` 的后台布局与角色切换模式。
+
+> **设计文档**: `docs/superpowers/specs/2026-06-03-v1.1-web-console-design.md`
+
+V1.1 不再作为 V1.0 的 Phase 2，而是独立的 Web 产品化阶段。
+
+```mermaid
+flowchart LR
+  subgraph V11["V1.1 Web 管理面板"]
+    direction LR
+    A["V1.1A<br/>前端底座 + 登录鉴权"] --> B["V1.1B<br/>HR 简历分析闭环"]
+    B --> C["V1.1C<br/>候选人评估 + 筛选导出"]
+    C --> D["V1.1D<br/>Admin 管理面板"]
+  end
+```
+
+### V1.1A — 前端底座 + 登录鉴权
 
 | # | 功能 | 说明 |
 |---|------|------|
-| 1 | 前端应用 | `repo/frontend/`，简历上传、评分查看、筛选排序 |
-| 2 | 双角色面板 | Admin 面板（模型管理 + 系统设置）+ HR 面板（简历评估 + 结果查看） |
-| 3 | 结果看板 | 可视化排名、维度对比 |
-| 4 | 筛选过滤 | 基于 skills/years/city/scores 等多维度筛选 |
-| 5 | TopK 报告 | 前端自由选择前 N 名导出 |
-| 6 | Excel 导出 | 前端按筛选结果导出 Excel |
-| 7 | 管理设置页 | Admin 专属：模型管理、DB 运维、缓存清理等危险操作 |
+| 1 | 前端应用骨架 | `repo/frontend/`，Next.js + TypeScript + shadcn + Tailwind |
+| 2 | 模板裁剪 | 保留 AppShell、Sidebar、Navbar、主题和基础组件，移除无关 demo 页面 |
+| 3 | API Client | 封装 `/api/v1/*` 调用、统一响应信封、错误提示和 token 注入 |
+| 4 | 登录鉴权 | 登录页、JWT 持久化、`/auth/me` 会话恢复、退出登录 |
+| 5 | 角色态 | Sidebar 按 HR / Admin 显示不同入口 |
 
-### 不做（V1.0 移除）
+### V1.1B — HR 简历分析闭环
 
-- 用户注册/登录（hardcoded 用户 + JWT 切换）
-- 多 HR 数据隔离（单空间，全局可见）
-- 模型价格历史审计
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | 简历上传 | PDF / DOCX 批量上传、文件预检查、创建 Job |
+| 2 | 实时进度 | 连接 `GET /jobs/{id}/sse`，展示阶段、总进度、单文件状态 |
+| 3 | 分析记录 | Job 列表、状态、统计、耗时、Token 和费用摘要 |
+| 4 | 任务详情 | 阶段时间线、失败原因、重跑入口、结果入口 |
+| 5 | 岗位库基础管理 | JD 列表、详情、新增、编辑、停用 |
+
+### V1.1C — 候选人评估 + 筛选导出
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | 候选人排名 | 基于 `jobs/{id}/results` 展示排名表和核心字段 |
+| 2 | 多维筛选 | skills / years / city / scores / status 等前端筛选 |
+| 3 | 详情查看 | 基本信息、人才评级、岗位匹配、证据片段、原始 JSON |
+| 4 | TopK 报告 | 前端选择前 N 名形成导出范围 |
+| 5 | Excel 导出 | 按当前筛选结果导出候选人评估表 |
+
+### V1.1D — Admin 管理面板
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | 模型管理 | 模型列表、默认模型、启用/停用、价格、Key 更新 |
+| 2 | 用户管理 | 用户列表、创建用户、角色调整、禁用和恢复 |
+| 3 | 系统状态 | DB 连通性、迁移状态、版本、缓存目录状态 |
+| 4 | 危险操作 | 重置数据库、清理缓存，必须二次确认 |
+| 5 | 数据中心 | 失败评估、解析异常、成本摘要和数据质量入口 |
+
+### 不做（V1.1 移除）
+
+- 多 HR 工作空间隔离。
+- 在线编辑 Prompt 和评分手册。
+- 报告模板管理。
+- 模型价格历史审计。
+- WebSocket；实时进度继续使用 SSE。
+
+### V1.1 验收标准
+
+- HR 可通过浏览器完成登录、上传简历、查看实时进度、进入任务结果。
+- 候选人评估页可按岗位、城市、技能、评分和状态筛选，并导出当前结果。
+- Admin 可管理模型、用户和系统状态，危险操作具备二次确认。
+- 前端所有业务请求走统一 API Client，并正确处理 `{ code, msg, data, detail }` 响应信封。
 
 ---
 
@@ -284,8 +349,8 @@ flowchart LR
 | 1   | LLM provider 切换目前仅支持 OpenAI / Claude，如需扩展需改 Router | V0.1 | V0.4 Router 已预留 NOTE 扩展点 |
 | 2   | Prompt 无版本管理，修改后无法回滚对比                            | V0.3 | 建议后续加 prompt 版本号       |
 | 3   | 模型价格无历史审计，调价后历史 job_run 无法回溯当时单价          | V0.4 | 后续可加 price_snapshots 表    |
-| 4   | 用户工作空间隔离                                    | V1.0 | 无 workspace 概念，模型和 job 全局可见 |
+| 4   | 用户工作空间隔离                                    | V1.1 | 无 workspace 概念，模型和 job 全局可见 |
 | 5   | 模型分层（官方 vs 自定义）                          | V1.0 | sync-prices 行为与角色权限交叉，需先设计分层模型 |
-| 6   | 用户数据持久化                                      | V1.0 | hardcoded 用户表，无注册/删除/修改流程 |
+| 6   | 用户安全增强                                        | V1.0 | 暂无密码复杂度、修改密码、登录失败次数限制 |
 | 7   | Token 撤销机制                                      | V1.0 | 无黑名单、无 refresh token |
 | 8   | Rate Limiting                                       | V1.0 | V0.2 重试覆盖基本韧性，API 层限流后续加 |

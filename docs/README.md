@@ -2,12 +2,14 @@
 
 ## 设计
 
-| 文档                                                                                           | 说明                                           |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 文档                                                                     | 说明                                           |
+| ---------------------------------------------------------------------------- | ---------------------------------------------- |
 | [specs/2026-05-28-resume-agent-design.md](superpowers/specs/2026-05-28-resume-agent-design.md) | 主设计文档（架构、数据模型、CLI、Prompt 策略） |
+| [specs/2026-06-02-v1.0-api-design.md](superpowers/specs/2026-06-02-v1.0-api-design.md) | V1.0 REST API 服务化设计（Auth、Jobs、SSE、管理接口） |
+| [specs/2026-06-03-v1.1-web-console-design.md](superpowers/specs/2026-06-03-v1.1-web-console-design.md) | V1.1 Web 管理面板设计（阶段拆分、页面范围、权限边界） |
 | [ui-design/page-structure.md](ui-design/page-structure.md)                                     | Web UI 页面结构说明（侧边栏、页面职责、数据映射） |
 | [ui-design/design.md](ui-design/design.md)                                                     | Web UI 设计系统（Token、组件、页面内容规范） |
-| [roadmap.md](roadmap.md)                                                                       | 版本路线图（V0.1 ~ V1.0 + 后续规划）           |
+| [roadmap.md](roadmap.md)                                                                       | 版本路线图（V0.1 ~ V1.1 + 后续规划）           |
 
 ## 架构
 
@@ -30,3 +32,4 @@
 | [references/人才评级打分手册-V1.md](references/人才评级打分手册-V1.md)     | 人才评级打分手册 V1（8 维度 / 100 分）   |
 | [references/岗位匹配度评分手册-V1.md](references/岗位匹配度评分手册-V1.md) | 岗位匹配度评分手册 V1（7 维度 / 100 分） |
 | [references/职业描述和招聘职位.md](references/职业描述和招聘职位.md)       | 岗位 JD 描述                             |
+| [前端页面参考项目](https://github.com/arhamkhnz/next-shadcn-admin-dashboard)| 前端项目参考模版 |

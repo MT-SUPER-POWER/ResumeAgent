@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: resume-agent-pg
+    environment:
+      POSTGRES_USER: resume_agent
+      POSTGRES_DB: resume_agent
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    ports:
+      - "30432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resume_agent -d resume_agent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../repo/backend
+      dockerfile: .docker/Dockerfile
+    container_name: resume-agent-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend-config/application.local.yaml:/app/application.local.yaml:ro
+      - logs:/app/logs
+      - output:/app/output
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  logs:
+  output:

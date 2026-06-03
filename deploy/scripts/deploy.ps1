@@ -220,7 +220,7 @@ function Backend-Connect {
     Write-Host "  local:         http://localhost:$servicePort"
   }
   if ($lbIp) {
-    Write-Host "  load balancer: http://$lbIp:30080"
+    Write-Host "  load balancer: http://$lbIp:$servicePort"
   }
   Write-Host "  cluster dns:   http://resume-agent-backend.resume-agent:8080"
   Write-Host "  image:         $BackendImage"

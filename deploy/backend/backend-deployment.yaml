@@ -34,8 +34,6 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - serve
-            - --port
-            - "8080"
           ports:
             - containerPort: 8080
               name: http

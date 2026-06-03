@@ -192,7 +192,7 @@ backend_connect() {
     echo "  local:         http://localhost:$service_port"
   fi
   if [ -n "$lb_ip" ]; then
-    echo "  load balancer: http://$lb_ip:30080"
+    echo "  load balancer: http://$lb_ip:$service_port"
   fi
   echo "  cluster dns:   http://resume-agent-backend.resume-agent:8080"
   echo "  image:         $BACKEND_IMAGE"

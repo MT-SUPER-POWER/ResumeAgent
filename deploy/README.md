@@ -17,7 +17,7 @@ deploy/
 │   ├── postgres-pvc.yaml           # 持久化存储 (10Gi)
 │   └── postgres-statefulset.yaml   # PostgreSQL 16 Alpine
 └── svc/
-    ├── backend-service.yaml        # 后端 LoadBalancer Service (localhost:30080)
+    ├── backend-service.yaml        # 后端 LoadBalancer Service (localhost:8080)
     └── postgres-service.yaml       # LoadBalancer Service (localhost:30432)
 ```
 
@@ -63,7 +63,7 @@ Windows PowerShell：
 | 方式                 | 地址                                                   |
 | -------------------- | ------------------------------------------------------ |
 | LoadBalancer | 通过 `./deploy/scripts/deploy.sh backend connect` 查看 |
-| LoadBalancer 本地端口 | `http://localhost:30080` |
+| LoadBalancer 本地端口 | `http://localhost:8080` |
 | Cluster DNS (集群内) | `http://resume-agent-backend.resume-agent:8080`        |
 
 > 默认后端镜像名为 `resume-agent-backend:dev`，由脚本使用 Docker Desktop 本机 Docker daemon 构建，并传入 `PDFIUM_VERSION=7869`。后端 Dockerfile 会按 Docker 目标架构自动下载对应的 pdfium Linux 动态库，支持 `linux/amd64` 和 `linux/arm64`。

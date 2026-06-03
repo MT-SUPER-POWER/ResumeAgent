@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: resume_agent
       POSTGRES_DB: resume_agent
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${RA_DB__PASSWORD:-changeme}
     ports:
       - "5432:5432"
     volumes:
@@ -24,8 +24,9 @@ services:
     container_name: resume-agent-backend
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     volumes:
-      - ./backend-config/application.local.yaml:/app/application.local.yaml:ro
       - logs:/app/logs
       - output:/app/output
     depends_on:

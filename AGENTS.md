@@ -59,6 +59,26 @@ match protocol {
 
 **注意**：标签仅用于上述特定场景的关键性注释。一般的代码说明、流程解释等普通注释不需要带关键字，保持简洁即可。
 
+## 5. Web UI 模板与设计系统规范（必须）
+
+- ResumeAgent Web 管理面板必须继承参考模板 `docs/references/next-shadcn-admin-dashboard/` 的视觉风格、布局结构、组件体系和交互习惯。
+- 禁止脱离参考模板重新手写一套 Dashboard Shell、Sidebar、Navbar、Theme、Layout Controls 或基础 UI 组件。
+- Web 前端落地前必须先阅读并对齐以下模板文件：
+  - `docs/references/next-shadcn-admin-dashboard/README.md`
+  - `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/layout.tsx`
+  - `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/_components/sidebar/app-sidebar.tsx`
+  - `docs/references/next-shadcn-admin-dashboard/src/navigation/sidebar/sidebar-items.ts`
+  - `docs/references/next-shadcn-admin-dashboard/src/app/(main)/auth/_components/login-form.tsx`
+  - `docs/references/next-shadcn-admin-dashboard/src/components/ui/`
+- `repo/frontend` 的页面、组件、导航和主题实现应优先从参考模板迁移或适配；只有 ResumeAgent 业务数据、API 对接、权限逻辑、页面文案和导航项允许按业务改造。
+- 设计文档以 `docs/ui-design/design.md` 为准。该文档必须明确记录模板继承关系、允许改造范围和禁止偏离项；修改 Web UI 设计时必须同步更新该文档。
+- 视觉验收标准：页面看起来应与参考模板属于同一套产品，而不是“参考模板 + 另一套自定义后台”的拼接。
+- 提交 Web UI 变更前，必须自查：
+  - 是否保留模板的 `SidebarProvider` / `SidebarInset` / 可折叠侧边栏模式。
+  - 是否复用模板 shadcn/ui 组件和 token，而不是新增重复基础组件。
+  - 是否保留模板的主题、布局偏好、间距、圆角、边框、动效和响应式行为。
+  - 是否只替换了业务导航、页面内容、API 数据和 ResumeAgent 品牌信息。
+
 <!-- END: cooperation-rule  -->
 
 

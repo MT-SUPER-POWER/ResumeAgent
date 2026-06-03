@@ -1,32 +1,73 @@
 # ResumeAgent Web UI 设计系统
 
-> 状态: V0.1 草案  
-> 适用范围: ResumeAgent Web 端 B 端后台管理界面  
+> 状态: V0.2 模板继承规范
+> 适用范围: ResumeAgent Web 端 B 端后台管理界面
+> 参考模板: `docs/references/next-shadcn-admin-dashboard/`
 > 关联页面结构: `docs/ui-design/page-structure.md`
 
-## 设计方向
+## 核心原则
 
-ResumeAgent 的 Web UI 采用经典 B 端后台布局:
+ResumeAgent Web UI 不重新设计一套 Dashboard。所有前端页面必须继承 `next-shadcn-admin-dashboard` 的布局、组件、主题和交互体系，再把 ResumeAgent 的业务导航、API 数据和页面内容接进去。
 
-```text
-Top Navbar
-└── Sidebar + Children
-```
-
-产品体验重点不是营销展示，而是让 HR 快速完成:
+一句话验收标准:
 
 ```text
-上传简历 -> 自动岗位匹配 -> AI 评估 -> 报告生成 -> 汇总留存
+用户看到 ResumeAgent Web 时，应感觉它就是参考模板的一套业务定制版。
 ```
 
-设计关键词:
+## 模板源
 
-- **克制**: 使用浅灰背景、白色面板、细边框和低强度阴影。
-- **高效**: 首页看态势，简历分析做任务，候选人评估看结果。
-- **可信**: 分数、证据、JSON、报告路径都要可追溯。
-- **清晰**: JD 不作为分析前必选项，只作为自动岗位匹配的基础数据。
+必须优先阅读和对齐以下文件:
 
-## 页面信息架构
+| 模板文件 | 用途 |
+| ---- | ---- |
+| `docs/references/next-shadcn-admin-dashboard/README.md` | 模板能力、技术栈、设计方向 |
+| `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/layout.tsx` | Dashboard 全局布局、顶部栏、侧边栏 Provider |
+| `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/_components/sidebar/app-sidebar.tsx` | 侧边栏结构和品牌区域 |
+| `docs/references/next-shadcn-admin-dashboard/src/app/(main)/dashboard/_components/sidebar/*.tsx` | 搜索、主题切换、布局控制、账号切换 |
+| `docs/references/next-shadcn-admin-dashboard/src/navigation/sidebar/sidebar-items.ts` | 导航分组与菜单模型 |
+| `docs/references/next-shadcn-admin-dashboard/src/app/(main)/auth/_components/login-form.tsx` | 登录表单结构、校验和 shadcn 表单风格 |
+| `docs/references/next-shadcn-admin-dashboard/src/components/ui/` | shadcn/ui 基础组件库 |
+| `docs/references/next-shadcn-admin-dashboard/src/lib/preferences/` | 主题、布局偏好与持久化 |
+| `docs/references/next-shadcn-admin-dashboard/src/styles/presets/` | 主题 preset 与视觉 token |
+
+## 必须继承
+
+以下内容必须从模板迁移或保持同构实现:
+
+- Next.js App Router 分组结构，优先使用 `(main)`、`dashboard`、`auth` 等模板路由组织。
+- `SidebarProvider`、`SidebarInset`、`SidebarTrigger`、可折叠 Sidebar 和 inset 布局。
+- Dashboard header 的工具区结构，包括搜索入口、布局控制、主题切换、账号入口。
+- shadcn/ui 组件体系，特别是 `button`、`card`、`field`、`input`、`sidebar`、`dropdown-menu`、`dialog`、`table`、`tabs`、`badge`、`separator`、`tooltip`。
+- 模板的 Tailwind v4、CSS variables、主题 preset、dark mode 和偏好存储。
+- 模板的 spacing、border、radius、shadow、focus ring、hover/active/disabled 状态。
+- 模板的响应式行为和移动端 Sidebar 体验。
+
+## 允许改造
+
+只能围绕 ResumeAgent 业务做定制:
+
+- 品牌名称、Logo 文案、页面标题和空状态文案。
+- Sidebar 导航项和分组。
+- 登录接口、用户信息、权限控制和登出逻辑。
+- 页面内容区的数据、表格、图表、表单和任务状态。
+- API Client、状态管理、SSE 订阅、文件上传和报告下载。
+- 业务主题色的轻微调整，但必须保持模板整体视觉语言。
+
+## 禁止偏离
+
+以下行为禁止:
+
+- 手写新的 `AppShell`、`TopNav`、`Sidebar` 替代模板结构。
+- 新增一套与模板重复的基础 UI 组件。
+- 使用自定义浅灰后台风格覆盖模板的主题和组件状态。
+- 删除模板的主题切换、布局控制、Sidebar 折叠能力，除非用户明确要求。
+- 把参考模板只当作视觉灵感，而不是工程底座。
+- 在业务页面中直接使用大量裸 `div + Tailwind` 拼装可由 shadcn/ui 表达的控件。
+
+## ResumeAgent 信息架构
+
+导航应以模板 `sidebar-items.ts` 的数据模型承载，分组如下:
 
 ```text
 核心工作
@@ -44,273 +85,15 @@ Top Navbar
 - 系统设置
 ```
 
-## Design Tokens
+Admin 用户可见 `系统管理`；普通 HR 用户只看到 `核心工作` 和 `基础数据`。
 
-### Color Primitives
-
-| Token | Value | 用途 |
-| --- | --- | --- |
-| `primitive/white` | `#FFFFFF` | 白色面板 |
-| `primitive/gray/50` | `#F6F7F9` | 页面背景 |
-| `primitive/gray/100` | `#F1F4F8` | Sidebar 背景 |
-| `primitive/gray/200` | `#E5EAF2` | 分割线 / 弱边框 |
-| `primitive/gray/300` | `#D8DEE9` | 默认边框 |
-| `primitive/gray/500` | `#7A8599` | 次要文字 |
-| `primitive/gray/700` | `#374151` | 正文 |
-| `primitive/gray/900` | `#111827` | 标题 |
-| `primitive/blue/50` | `#EAF2FF` | 选中背景 |
-| `primitive/blue/500` | `#2F80ED` | 主品牌色 |
-| `primitive/blue/600` | `#1769E0` | 主按钮 |
-| `primitive/green/50` | `#EAF8EF` | 成功背景 |
-| `primitive/green/600` | `#2E9B57` | 成功文字 |
-| `primitive/red/50` | `#FDECEC` | 错误背景 |
-| `primitive/red/600` | `#D14343` | 错误文字 |
-| `primitive/orange/50` | `#FFF4E5` | 警告背景 |
-| `primitive/orange/600` | `#B76E00` | 警告文字 |
-
-### Semantic Colors
-
-| Token | Value | 用途 |
-| --- | --- | --- |
-| `color/bg/app` | `primitive/gray/50` | 应用背景 |
-| `color/bg/sidebar` | `primitive/gray/100` | 侧边栏背景 |
-| `color/bg/surface` | `primitive/white` | 卡片 / 面板 |
-| `color/bg/surface-muted` | `primitive/gray/50` | 表格头 / 弱区域 |
-| `color/bg/active` | `primitive/blue/50` | 导航选中 |
-| `color/bg/primary` | `primitive/blue/600` | 主按钮背景 |
-| `color/text/title` | `primitive/gray/900` | 页面标题 |
-| `color/text/body` | `primitive/gray/700` | 正文 |
-| `color/text/secondary` | `primitive/gray/500` | 辅助文字 |
-| `color/text/primary` | `primitive/blue/600` | 链接 / 强调 |
-| `color/border/default` | `primitive/gray/200` | 默认边框 |
-| `color/border/strong` | `primitive/gray/300` | 强边框 |
-| `color/status/success/bg` | `primitive/green/50` | 成功 Tag 背景 |
-| `color/status/success/text` | `primitive/green/600` | 成功 Tag 文字 |
-| `color/status/error/bg` | `primitive/red/50` | 失败 Tag 背景 |
-| `color/status/error/text` | `primitive/red/600` | 失败 Tag 文字 |
-| `color/status/warning/bg` | `primitive/orange/50` | 跳过 / 警告 Tag 背景 |
-| `color/status/warning/text` | `primitive/orange/600` | 跳过 / 警告 Tag 文字 |
-
-### Spacing
-
-| Token | Value | 用途 |
-| --- | --- | --- |
-| `spacing/2xs` | `4` | 紧凑图标间距 |
-| `spacing/xs` | `8` | Tag 内边距 / 紧凑列表 |
-| `spacing/sm` | `12` | 表单控件间距 |
-| `spacing/md` | `16` | 卡片内边距 |
-| `spacing/lg` | `20` | 面板间距 |
-| `spacing/xl` | `24` | 页面区块间距 |
-| `spacing/2xl` | `32` | 大区块间距 |
-
-### Radius
-
-| Token | Value | 用途 |
-| --- | --- | --- |
-| `radius/none` | `0` | 表格分割 |
-| `radius/sm` | `4` | Tag / 小按钮 |
-| `radius/md` | `6` | 输入框 / 导航选中 |
-| `radius/lg` | `8` | 卡片 / 面板最大圆角 |
-| `radius/full` | `999` | 头像 / pill |
-
-> 页面卡片圆角不超过 8px，保持 B 端系统的克制感。
-
-### Shadow
-
-| Style | Value | 用途 |
-| --- | --- | --- |
-| `shadow/card` | `0 1px 2px rgba(15, 23, 42, 0.04)` | 普通卡片 |
-| `shadow/popover` | `0 8px 24px rgba(15, 23, 42, 0.12)` | 浮层 / 抽屉 |
-
-### Icon
-
-图标统一使用 `lucide` 线性图标体系。
-
-使用规则:
-
-- 默认尺寸: 16px。
-- 快捷入口按钮内图标: 16px，白色描边。
-- 空状态、上传区或较大操作入口: 20px 或 24px。
-- 描边宽度: 2px。
-- 端点和转角: round。
-- 默认颜色: `color/text/secondary`。
-- 激活导航颜色: `color/text/primary`。
-- 图标只表达动作或对象，不单独承载复杂业务含义。
-
-当前映射:
-
-| 场景 | lucide 图标 |
-| --- | --- |
-| 首页 | `Home` |
-| 简历分析 / 上传简历 | `Upload` |
-| 分析记录 / 最近结果 | `History` |
-| 候选人评估 | `Users` |
-| 岗位库 | `BriefcaseBusiness` / `Briefcase` |
-| 报告中心 | `FileText` |
-| 数据中心 | `Database` |
-| 系统设置 | `Settings` |
-| 搜索 | `Search` |
-| 通知 | `Bell` |
-
-### Typography
-
-字体优先级:
-
-```css
-font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
-```
-
-| Style | Size / Line Height / Weight | 用途 |
-| --- | --- | --- |
-| `text/page-title` | `24 / 32 / 600` | 页面标题 |
-| `text/section-title` | `16 / 24 / 600` | 卡片标题 |
-| `text/body` | `14 / 22 / 400` | 正文和表格 |
-| `text/body-strong` | `14 / 22 / 600` | 表格重点字段 |
-| `text/caption` | `12 / 18 / 400` | 辅助信息 |
-| `text/metric` | `24 / 30 / 700` | 首页指标数字 |
-| `text/code` | `13 / 20 / 400` | JSON / 路径 |
-
-## Components
-
-### AppShell
-
-全局应用壳:
-
-- `Navbar`: 高 56px。
-- `Sidebar`: 宽 224px。
-- `Children`: 占用剩余空间，背景为 `color/bg/app`。
-
-### Navbar
-
-内容:
-
-- Logo + `ResumeAgent`
-- 全局搜索: `搜索候选人 / 岗位 / 分析记录`
-- 数据库状态
-- LLM Provider
-- 通知 / 设置 / 用户
-
-### Sidebar
-
-分组:
-
-- 核心工作
-- 基础数据
-- 系统管理
-
-状态:
-
-- Default
-- Active
-- Disabled
-- With badge
-
-### Card
-
-用于指标、图表、表格容器。
-
-规格:
-
-- 背景: `color/bg/surface`
-- 边框: `color/border/default`
-- 圆角: `radius/lg`
-- 阴影: `shadow/card`
-- 内边距: `spacing/md`
-
-### Button
-
-类型:
-
-- Primary: 主流程动作，如 `开始分析`
-- Secondary: 次级动作，如 `查看岗位库`
-- Ghost: 表格行内操作，如 `查看`
-- Danger: 删除 / 停用
-
-尺寸:
-
-- Small: 28px 高
-- Medium: 32px 高
-- Large: 40px 高
-
-### Input / Search
-
-用于全局搜索、筛选条件和表单输入。
-
-状态:
-
-- Default
-- Focus
-- Disabled
-- Error
-
-### Tag / Status
-
-状态标签:
-
-- `完成`: success
-- `分析中`: primary
-- `复用`: neutral
-- `跳过`: warning
-- `失败`: error
-- `待处理`: neutral
-
-### UploadPanel
-
-简历分析页核心组件。
-
-内容:
-
-- 上传图标
-- 文案: `拖拽 PDF / DOCX 简历到这里`
-- 次级说明: `支持批量上传，文件后缀大小写不敏感`
-- 文件列表
-- 文件状态
-- 主按钮: `开始分析`
-
-### ProgressSteps
-
-固定四阶段:
-
-```text
-文件解析 -> AI 评估 -> 报告生成 -> 汇总排名
-```
-
-状态:
-
-- Waiting
-- Running
-- Success
-- Error
-
-### DataTable
-
-用于分析记录、候选人评估、岗位库、数据中心。
-
-基础规则:
-
-- 表头背景使用 `color/bg/surface-muted`
-- 行高 44px
-- 支持状态 Tag
-- 行内主操作使用 Ghost Button
-- 分页放在表格底部右侧
-
-### DetailDrawer
-
-用于候选人详情、岗位详情和批次详情。
-
-结构:
-
-- Header: 标题 + 关闭按钮
-- Body: 分组信息
-- Footer: 操作按钮
-
-## 页面内容规范
+## 页面落地规则
 
 ### 首页
 
-首页只做汇总和入口。
+目标: 快速查看系统态势和进入高频任务。
 
-模块:
+内容:
 
 - 今日上传简历
 - 今日完成评估
@@ -321,13 +104,16 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 - 系统状态
 - 快捷入口
 
-不展示完整候选人排名。
+实现要求:
+
+- 使用模板的 `Card`、`Chart`、`Badge`、`Button`。
+- 页面密度、卡片圆角、标题层级和空白节奏必须贴近模板 Dashboard。
 
 ### 简历分析
 
-页面目标: 发起一次分析。
+目标: 发起一次简历分析任务。
 
-核心内容:
+内容:
 
 - 上传区
 - 文件预检查
@@ -343,23 +129,32 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 上传后系统将基于岗位库自动判断候选人最匹配岗位，无需手动选择 JD。
 ```
 
+实现要求:
+
+- 上传区应使用模板 `Card`、`Field`、`Button`、`Progress` 或相近组件组合。
+- 文件状态列表优先使用模板 `Table`。
+
 ### 分析记录
 
-页面目标: 查找和追溯一次分析。
+目标: 查找和追溯一次分析。
 
-核心内容:
+内容:
 
 - 批次列表
 - 批次状态
 - 输出文件
 - 异常原因
-- 后续断点续跑 / 失败重试入口
+- 断点续跑 / 失败重试入口
+
+实现要求:
+
+- 使用模板 `Table`、`Badge`、`DropdownMenu`、`Pagination`。
 
 ### 候选人评估
 
-页面目标: 查看排名、筛选候选人、阅读评估详情。
+目标: 查看排名、筛选候选人、阅读评估详情。
 
-核心内容:
+内容:
 
 - 排名表
 - 筛选区
@@ -369,11 +164,16 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 - 证据片段
 - 原始 JSON 入口
 
+实现要求:
+
+- 详情面板优先使用模板 `Sheet` / `Drawer` / `Dialog` 风格。
+- 分数和状态使用模板 `Badge`、`Progress`、`Chart`。
+
 ### 岗位库
 
-页面目标: 管理自动匹配的基础数据。
+目标: 管理自动匹配的基础数据。
 
-核心内容:
+内容:
 
 - 活跃岗位列表
 - 岗位详情
@@ -383,9 +183,9 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 
 ### 报告中心
 
-页面目标: 管理交付物。
+目标: 管理交付物。
 
-核心内容:
+内容:
 
 - 个人报告
 - 汇总排名
@@ -395,9 +195,9 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 
 ### 数据中心
 
-页面目标: 监控数据质量和成本。
+目标: 监控数据质量和成本。
 
-核心内容:
+内容:
 
 - 简历文件表
 - 评估结果表
@@ -408,9 +208,9 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 
 ### 系统设置
 
-页面目标: 管理系统参数。
+目标: 管理系统参数。
 
-核心内容:
+内容:
 
 - LLM Provider
 - 数据库连接
@@ -419,118 +219,38 @@ font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
 - 评分手册版本
 - 超时 / 重试 / 并发
 
-## Figma 落地范围
+## 组件使用规范
 
-Figma 文件:
+| 场景 | 必须优先使用 |
+| ---- | ---- |
+| 页面容器 | 模板 Dashboard layout + `SidebarInset` |
+| 导航 | 模板 sidebar 组件 + `sidebar-items.ts` 数据模型 |
+| 表单 | `Field`、`Input`、`Checkbox`、`Select`、`Button`、`react-hook-form`、`zod` |
+| 数据表 | `Table`、`Badge`、`DropdownMenu`、`Pagination` |
+| 筛选 | `Input`、`Select`、`Popover`、`Calendar`、`DateRangePicker` |
+| 详情 | `Sheet` / `Drawer` / `Dialog` |
+| 指标 | `Card`、`Chart`、`Badge` |
+| 通知 | `sonner` |
+| 图标 | `lucide-react`，保持模板尺寸和描边风格 |
 
-- [ResumeAgent UI Design System](https://www.figma.com/design/iDGRe7fVqOOREoDxtypmMK)
+## 视觉质量检查
 
-本次 Figma 先落地设计系统基础层和页面总览，不制作所有交互细节。
+提交 Web UI 前必须自查:
 
-需要创建:
+- 是否能从代码结构看出它继承自参考模板。
+- 页面是否保留模板的顶部工具栏、可折叠侧边栏、主题切换和布局控制。
+- 新增页面是否使用模板 shadcn/ui 组件，而不是重复造基础控件。
+- 间距、圆角、边框、阴影、字体大小是否与模板页面一致。
+- 移动端是否仍保留模板 Sidebar 行为。
+- 暗色模式是否可用，且没有硬编码浅色样式导致不可读。
+- 业务色和状态色是否通过 token / class 体系表达，而不是散落 raw hex。
 
-- `00 Cover`
-- `01 Foundations`
-- `02 Components`
-- `03 Pages`
+## Figma 约束
 
-需要创建的变量集合:
+现有 Figma 设计稿只能作为业务信息架构和页面内容参考，不再作为独立视觉系统来源。
 
-- `RA Primitives`
-- `RA Color`
-- `RA Spacing`
-- `RA Radius`
+Figma 后续如需继续维护，应重建为模板继承版:
 
-需要创建的样式:
-
-- Text styles: page-title, section-title, body, body-strong, caption, metric, code
-- Effect styles: card, popover
-
-需要创建的组件:
-
-- AppShell
-- Navbar
-- Sidebar
-- Card
-- Button
-- Input
-- Tag
-- UploadPanel
-- ProgressSteps
-- DataTable
-- DetailDrawer
-
-需要创建的页面缩略稿:
-
-- 首页
-- 简历分析
-- 分析记录
-- 候选人评估
-- 岗位库
-- 报告中心
-- 数据中心
-- 系统设置
-
-## Figma 当前落地结果
-
-已完成:
-
-- 4 个页面:
-  - `00 Cover`
-  - `01 Foundations`
-  - `02 Components`
-  - `03 Pages`
-- 4 个变量集合，共 47 个变量:
-  - `RA Primitives`
-  - `RA Color`
-  - `RA Spacing`
-  - `RA Radius`
-- 7 个文字样式:
-  - `RA/Page Title`
-  - `RA/Section Title`
-  - `RA/Body`
-  - `RA/Body Strong`
-  - `RA/Caption`
-  - `RA/Metric`
-  - `RA/Code`
-- 2 个阴影样式:
-  - `RA/Card`
-  - `RA/Popover`
-- 34 个颜色 Paint Styles:
-  - `RA/Primitive/*`
-  - `RA/Semantic/*`
-  - `RA/Status/*`
-- 6 个本地组件样例:
-  - `RA/Button`
-  - `RA/Tag / Status`
-  - `RA/Input / Search`
-  - `RA/UploadPanel`
-  - `RA/ProgressSteps`
-  - `RA/DataTable`
-- 12 个 lucide 风格图标组件:
-  - `RA/Icon/Lucide/home`
-  - `RA/Icon/Lucide/upload`
-  - `RA/Icon/Lucide/history`
-  - `RA/Icon/Lucide/users`
-  - `RA/Icon/Lucide/briefcase`
-  - `RA/Icon/Lucide/fileText`
-  - `RA/Icon/Lucide/database`
-  - `RA/Icon/Lucide/settings`
-  - `RA/Icon/Lucide/search`
-  - `RA/Icon/Lucide/bell`
-  - `RA/Icon/Lucide/chart`
-  - `RA/Icon/Lucide/list`
-- `03 Pages` 页面中已放置 8 个页面缩略稿，用于验证侧边栏结构和页面职责。
-- `03 Pages` 页面中已创建首页高保真稿 `RA / Screen - 首页`。
-- 首页高保真稿已将侧边栏、快捷入口、搜索和顶部状态占位符替换为 lucide 风格图标。
-
-首页当前稿:
-
-![首页 Figma 截图](homepage-screenshot.png)
-
-后续需要继续精细化:
-
-- 将组件样例拆成正式 variant set。
-- 给 AppShell、Navbar、Sidebar、Card、DetailDrawer 建立独立组件。
-- 继续基于当前 AppShell 复现 `简历分析` 和 `候选人评估` 两个核心页面。
-- 为图表、表格、筛选器补充真实交互状态。
+- Foundations 对齐模板 CSS variables 和 shadcn/ui token。
+- Components 对齐模板 `src/components/ui`。
+- Pages 只表达 ResumeAgent 业务内容，不重新发明 Dashboard 壳。

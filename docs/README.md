@@ -11,6 +11,12 @@
 | [ui-design/design.md](ui-design/design.md)                                                     | Web UI 设计系统（Token、组件、页面内容规范） |
 | [roadmap.md](roadmap.md)                                                                       | 版本路线图（V0.1 ~ V1.1 + 后续规划）           |
 
+## 实施计划
+
+| 文档 | 说明 |
+| ---- | ---- |
+| [plans/2026-06-03-v1.1a-frontend-foundation.md](superpowers/plans/2026-06-03-v1.1a-frontend-foundation.md) | V1.1A 前端底座、登录鉴权、API Client 与角色导航实施计划 |
+
 ## 架构
 
 | 文档                                                   | 说明                                       |

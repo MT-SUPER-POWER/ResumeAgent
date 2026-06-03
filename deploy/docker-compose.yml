@@ -25,7 +25,6 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./backend-config/application.local.yaml:/app/application.local.yaml:ro
       - logs:/app/logs
       - output:/app/output
     depends_on:

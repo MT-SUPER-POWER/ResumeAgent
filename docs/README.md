@@ -7,8 +7,9 @@
 | [specs/2026-05-28-resume-agent-design.md](superpowers/specs/2026-05-28-resume-agent-design.md) | 主设计文档（架构、数据模型、CLI、Prompt 策略） |
 | [specs/2026-06-02-v1.0-api-design.md](superpowers/specs/2026-06-02-v1.0-api-design.md) | V1.0 REST API 服务化设计（Auth、Jobs、SSE、管理接口） |
 | [specs/2026-06-03-v1.1-web-console-design.md](superpowers/specs/2026-06-03-v1.1-web-console-design.md) | V1.1 Web 管理面板设计（阶段拆分、页面范围、权限边界） |
+| [specs/2026-06-05-v1.2-talent-pool-closed-loop.md](superpowers/specs/2026-06-05-v1.2-talent-pool-closed-loop.md) | V1.2 人才库面试闭环设计（数据模型、API、前端交互流、阶段队列） |
 | [ui-design/page-structure.md](ui-design/page-structure.md)                                     | Web UI 页面结构说明（侧边栏、页面职责、数据映射） |
-| [ui-design/design.md](ui-design/design.md)                                                     | Web UI 设计系统（模板继承、信息架构、岗位库与报告中心） |
+| [ui-design/design.md](ui-design/design.md)                                                     | Web UI 设计系统（模板继承、信息架构、人才库排期反馈闭环、岗位库与报告中心） |
 | [roadmap.md](roadmap.md)                                                                       | 版本路线图（V0.1 ~ V1.1 + 后续规划）           |
 
 ## 实施计划

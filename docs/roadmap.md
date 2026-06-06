@@ -1,6 +1,6 @@
 # Resume Agent Roadmap
 
-> 最后更新: 2026-06-03
+> 最后更新: 2026-06-05
 >
 > - 设计: `docs/superpowers/specs/2026-05-28-resume-agent-design.md`
 > - 模块: `docs/architecture/modules.md`
@@ -8,6 +8,7 @@
 > - V0.4 设计: `docs/superpowers/specs/2026-06-01-v0.4-token-cost-design.md`
 > - V1.0 API 设计: `docs/superpowers/specs/2026-06-02-v1.0-api-design.md`
 > - V1.1 Web 设计: `docs/superpowers/specs/2026-06-03-v1.1-web-console-design.md`
+> - V1.2 闭环设计: `docs/superpowers/specs/2026-06-05-v1.2-talent-pool-closed-loop.md`
 
 ---
 
@@ -36,9 +37,10 @@ gantt
 
   section Web管理面板
   V1.1A 底座     :v11a, 2026-06-09, 2d
-  V1.1B 分析     :v11b, 2026-06-11, 3d
-  V1.1C 筛选     :v11c, 2026-06-14, 3d
-  V1.1D 管理     :v11d, 2026-06-17, 2d
+  V1.2 人才库闭环 :v12, 2026-06-11, 4d
+  V1.1B 分析     :v11b, after v12, 3d
+  V1.1C 筛选     :v11c, after v11b, 3d
+  V1.1D 管理     :v11d, after v11c, 2d
 ```
 
 ---
@@ -259,6 +261,8 @@ flowchart LR
 **目标**: HR 和 Admin 通过浏览器完成核心工作流，前端基于 Next.js + shadcn，参考 `docs/references/next-shadcn-admin-dashboard/` 的后台布局与角色切换模式。
 
 > **设计文档**: `docs/superpowers/specs/2026-06-03-v1.1-web-console-design.md`
+>
+> **优先级调整**: V1.1A（前端底座）完成后，优先进入 V1.2（人才库面试闭环），而非 V1.1B。V1.1B/C/D 排在 V1.2 之后。原因：人才库闭环是连接 AI 初筛与人工决策的核心链路，必须优先于分析记录、候选人筛选导出和管理面板等辅助功能。
 
 V1.1 不再作为 V1.0 的 Phase 2，而是独立的 Web 产品化阶段。
 
@@ -281,6 +285,116 @@ flowchart LR
 | 3 | API Client | 封装 `/api/v1/*` 调用、统一响应信封、错误提示和 token 注入 |
 | 4 | 登录鉴权 | 登录页、JWT 持久化、`/auth/me` 会话恢复、退出登录 |
 | 5 | 角色态 | Sidebar 按 HR / Admin 显示不同入口 |
+
+---
+
+## V1.2 — 人才库面试闭环（优先于 V1.1B/C/D）
+
+**目标**: 打通"人才库筛选 → 安排面试 → 会议记录留痕 → 阶段同步回表"的完整招聘闭环，让招聘流程在系统内形成可追溯的电路。
+
+> **设计文档**: `docs/superpowers/specs/2026-06-05-v1.2-talent-pool-closed-loop.md`
+>
+> **优先级说明**: V1.2 排在 V1.1A 之后、V1.1B/C/D 之前，因为人才库是连接"AI 初筛"与"人工决策"的关键节点——只有闭环跑通，HR 才能在系统内完成从筛选到面试的完整工作流，而不是停留在只读排行榜。
+
+```mermaid
+flowchart LR
+  subgraph V12["V1.2 人才库面试闭环"]
+    direction LR
+    A["人才库筛选<br/>按 JD 归档候选人"] --> B["安排面试<br/>排期 + 面试官 + 方式"]
+    B --> C["会议记录留痕<br/>评分维度 + 亮点/疑点/风险"]
+    C --> D["阶段同步回表<br/>更新 stageQueue"]
+    D --> A
+  end
+```
+
+### 闭环电路
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      人才库 (Talent Pool)                    │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  JD Tab ─→ 候选人表 ─→ 多选对比 ─→ 详情 Sheet         │  │
+│  │                                          │             │  │
+│  │                          ┌───────────────┤             │  │
+│  │                          │               │             │  │
+│  │                    排期安排 Tab    面试记录 Tab         │  │
+│  │                        │               ↑               │  │
+│  │                        ▼               │               │  │
+│  │                  记录反馈 ────→ 面试记录归档            │  │
+│  │                        │               │               │  │
+│  │                        ▼               │               │  │
+│  │                  提交留档 ─────────────┘               │  │
+│  │                        │                               │  │
+│  │                        ▼                               │  │
+│  │              stageQueue 阶段推进                        │  │
+│  │              (队首出队 → 下一阶段)                      │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  数据流: evaluation → talent_pool → interviews → feedback   │
+│  阶段流: stageQueue["待沟通","技术一面","复试"] → 逐一出队   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 交付清单
+
+#### 后端 — 数据模型
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | `talent_pool` 表 | 跨 Job 人才库主表：`id`、`resume_id`（FK→resumes）、`jd_id`（FK→job_descriptions）、`source_job_id`、`source_batch`、`owner`、`communication_status`（待沟通/已确认/待反馈/已归档）、`stage_queue`（TEXT[]，阶段队列，队首=当前阶段）、`added_at`、`updated_at` |
+| 2 | `interviews` 表 | 面试记录表：`id`、`talent_pool_id`（FK）、`round`（轮次名称）、`scheduled_at`、`duration_minutes`、`status`（已安排/已完成/已取消）、`interviewers`（TEXT[]）、`location`（线上/线下地址）、`conclusion`（通过/待定/淘汰/进入下一轮）、`overall_score`、`score_dimensions`（JSONB）、`highlights`（TEXT[]）、`concerns`（TEXT[]）、`risks`（TEXT[]）、`suggested_questions`（TEXT[]）、`notes`、`attachments`（JSONB，文件列表）、`created_at`、`updated_at` |
+
+#### 后端 — API
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | `GET /api/v1/talent-pool` | 人才库列表，支持 `?jd_id=`、`?status=`、`?owner=`、`?search=` 筛选，分页 |
+| 2 | `POST /api/v1/talent-pool` | 从 evaluation 添加候选人到人才库，指定 JD 和 owner |
+| 3 | `GET /api/v1/talent-pool/{id}` | 人才库条目详情，含排期和面试记录 |
+| 4 | `PATCH /api/v1/talent-pool/{id}` | 更新沟通状态、阶段队列、owner |
+| 5 | `DELETE /api/v1/talent-pool/{id}` | 从人才库移除候选人（软删除或标记归档） |
+| 6 | `POST /api/v1/talent-pool/{id}/interviews` | 安排面试：轮次、时间、面试官、方式、地点 |
+| 7 | `GET /api/v1/talent-pool/{id}/interviews` | 查询候选人所有面试记录 |
+| 8 | `PATCH /api/v1/interviews/{id}` | 更新面试记录（面试完成后填写反馈） |
+| 9 | `POST /api/v1/interviews/{id}/feedback` | 提交面试反馈：结论、评分维度、亮点/疑点/风险/建议追问/备注/附件 |
+| 10 | `POST /api/v1/talent-pool/{id}/advance-stage` | 推进阶段：队首出队，可选自动创建下一轮面试 |
+| 11 | `GET /api/v1/talent-pool/stats` | 人才库统计：各 JD 候选人数、各阶段分布、沟通状态分布 |
+
+#### 前端
+
+| # | 功能 | 说明 |
+|---|------|------|
+| 1 | 人才库 API 接入 | 替换 `candidate-data.ts` mock 数据，通过 API Client 获取真实人才库数据 |
+| 2 | 排期安排接入 | "安排一面""发送日程""记录反馈"按钮对接后端排期/面试 API |
+| 3 | 面试反馈提交 | 二级覆盖面板（`InterviewFeedbackPanel`）表单数据通过 API 提交留档 |
+| 4 | 阶段同步展示 | 提交反馈后自动推进 `stageQueue`，人才库表格"当前阶段"列实时反映 |
+| 5 | 面试记录归档 | 已提交的反馈进入面试记录 Tab 的时间线，不可编辑但可查看 |
+| 6 | 从分析记录添加 | 在 Job 结果页（`/dashboard/jobs/[id]`）提供"添加到人才库"入口 |
+
+### 阶段队列规则
+
+- `stageQueue` 是一个有序数组，队首 = 候选人当前所处的阶段。
+- 完成当前阶段（提交面试反馈）后，队首出队，下一项自动成为当前阶段。
+- 阶段名称不强制枚举——HR 可以自定义（如"待沟通""技术一面""作业评估""复试""HR 终面"）。
+- 当 `stageQueue` 为空时，候选人状态标记为"已完成全部流程"。
+- 如果面试结论为"淘汰"，候选人进入"已归档"状态并从活跃队列移除。
+
+### 不做（V1.2 范围外）
+
+- 日历集成（Google Calendar / 飞书日历双向同步）
+- 邮件/飞书通知（面试邀请自动发送）
+- 面试官独立视角和待办列表
+- 面试题目库和自动组卷
+- 多轮面试的复杂工作流引擎（分支、条件跳转）
+
+### V1.2 验收标准
+
+- HR 可在人才库按 JD 筛选候选人，查看排期和面试记录。
+- HR 可通过详情 Sheet 的排期安排 Tab 安排面试（时间、面试官、方式），数据持久化。
+- HR 可在面试完成后通过"记录反馈"面板提交评分维度、结论、亮点/疑点/风险和建议追问。
+- 提交反馈后，候选人的 `stageQueue` 自动推进，人才库表格"当前阶段"列同步更新。
+- 面试记录 Tab 的时间线展示完整面试历史，包含每轮的结论和综合决策摘要。
+- 可从分析记录页将评估结果一键添加到人才库。
 
 ### V1.1B — HR 简历分析闭环
 
@@ -333,24 +447,24 @@ flowchart LR
 
 | 项目           | 优先级 | 说明                                   | 技术依赖                               |
 | -------------- | ------ | -------------------------------------- | -------------------------------------- |
-| OCR 解析       | 中     | 图片/扫描件简历                        | 需先确定输入格式和 OCR 服务            |
+| OCR 解析      | 中     | 图片/扫描件简历                        | 需先确定输入格式和 OCR 服务            |
 | 多 JD 批量评分 | 中     | 一份简历同时匹配多个岗位               | 提取复用已支持，评分阶段并发按 JD 分组 |
 | 重复简历检测   | 低     | 同一候选人投了略微不同版本的简历       | 文本相似度 / embedding                 |
 | 评分手册版本化 | 低     | 手册迭代后，历史评分可追溯用的哪个版本 | 评分表加 `manual_version` 字段         |
-| 面试反馈闭环   | 低     | 面试结果反哺评分模型                   | 需要面试数据积累                       |
-| 通知           | 低     | 评分完成后邮件/飞书通知 HR             | 邮件服务 / 飞书                        |
+| 面试数据反哺   | 低     | 积累面试数据后反哺评分模型优化         | 依赖 V1.2 面试数据积累                 |
+| 通知          | 低     | 评分完成/面试安排后邮件/飞书通知 HR    | 邮件服务 / 飞书 SDK                     |
 
 ---
 
 ## 技术债务跟踪
 
-| #   | 问题                                                             | 版本 | 状态                           |
-| --- | ---------------------------------------------------------------- | ---- | ------------------------------ |
+| #   | 问题                                                      | 版本 | 状态                           |
+| --- | --------------------------------------------------------- | ---- | ------------------------------ |
 | 1   | LLM provider 切换目前仅支持 OpenAI / Claude，如需扩展需改 Router | V0.1 | V0.4 Router 已预留 NOTE 扩展点 |
 | 2   | Prompt 无版本管理，修改后无法回滚对比                            | V0.3 | 建议后续加 prompt 版本号       |
 | 3   | 模型价格无历史审计，调价后历史 job_run 无法回溯当时单价          | V0.4 | 后续可加 price_snapshots 表    |
 | 4   | 用户工作空间隔离                                    | V1.1 | 无 workspace 概念，模型和 job 全局可见 |
 | 5   | 模型分层（官方 vs 自定义）                          | V1.0 | sync-prices 行为与角色权限交叉，需先设计分层模型 |
-| 6   | 用户安全增强                                        | V1.0 | 暂无密码复杂度、修改密码、登录失败次数限制 |
-| 7   | Token 撤销机制                                      | V1.0 | 无黑名单、无 refresh token |
-| 8   | Rate Limiting                                       | V1.0 | V0.2 重试覆盖基本韧性，API 层限流后续加 |
+| 6   | 用户安全增强                                      | V1.0 | 暂无密码复杂度、修改密码、登录失败次数限制 |
+| 7   | Token 撤销机制                                   | V1.0 | 无黑名单、无 refresh token |
+| 8   | Rate Limiting                                   | V1.0 | V0.2 重试覆盖基本韧性，API 层限流后续加 |

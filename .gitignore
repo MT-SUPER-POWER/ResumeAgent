@@ -5,7 +5,13 @@ docs/references/actix-template
 .worktrees/
 
 # claude
-.claude/settings.local.json
+.claude/
 
 # Jetbrain DB
 DB/*
+
+# node.js
+node_modules/
+
+# MacOS
+.DS_Store

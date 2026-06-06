@@ -3,6 +3,7 @@ docs/references/actix-template
 
 # local implementation worktrees
 .worktrees/
+worktrees/
 
 # claude
 .claude/
